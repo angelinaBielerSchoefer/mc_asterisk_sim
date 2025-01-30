@@ -120,3 +120,72 @@ class MarketGeneral:
         self.total_assets = total_assets + self.rest_of_the_world.capital
         return self.total_assets
 
+
+    def calc_gdp(self, company_list):
+        new_gdp = 0
+        for index in company_list:
+            company = company_list[index]
+
+            if company.is_alive:
+                new_gdp += company.business_value
+        new_gdp+= self.rest_of_the_world.business_value
+        delta_gdp = new_gdp - self.gdp
+        self.gdp = new_gdp
+        return self.gdp, delta_gdp
+
+
+    def calc_general_situation_company(self,
+                                      business_power_last_year,
+                                      business_value_last_year,
+                                      capital_last_year,
+                                      co2_emission_last_year,
+                                      market_influence
+                                      ):
+        delta_capital = (business_value_last_year * business_power_last_year)
+        capital =  delta_capital + capital_last_year
+
+        weight_business = 1 #-weight_nature
+        capital_business = capital*weight_business
+
+        delta_business_value = capital_business * market_influence
+        business_value = business_value_last_year + delta_business_value
+
+        co2_emission = co2_emission_last_year #todo: calc co2_emissions
+        return business_value, capital, co2_emission, delta_capital, delta_business_value
+
+
+    def __get_sales_volume_category(self,capital):
+        #capital in Mrd Euro
+
+        capi = capital * 1000 #recalc in mio
+
+        if ( capi > 2):
+            cat = 'u2'
+        else:
+            if capi > 10:
+                cat = '2-10'
+            else:
+                if capi > 50:
+                    cat = '10-50'
+                else:
+                    cat = 'o50'
+
+
+        return cat
+    def log_to_journal(self, logId):
+        self.journal[logId] = {}
+        self.journal[logId]['business_power'] = float(self.business_power)
+        self.journal[logId]['co2_emission_total'] = float(self.co2_emission_total)
+        self.journal[logId]['gdp'] = float(self.gdp)
+        self.journal[logId]['market_condition'] = float(self.market_condition)
+        self.journal[logId]['total_assets'] = float(self.total_assets)
+        return self.journal
+
+    def to_dict(self):
+        return {
+            'business_power': float(self.business_power),
+            'co2_emission_total': float(self.co2_emission_total),
+            'gdp': float(self.gdp),
+            'market_condition': float(self.market_condition),
+            'total_assets': float(self.total_assets),
+        }
