@@ -25,6 +25,7 @@ class MarketGeneral:
         self.__set_market_condition_global()
 
         self.gdp = gdp_start
+        self.count_company = 0
         self.co2_emission_total = start_co2_emission_total
         self.start_business_value_share = start_business_value_share
         self.start_capital_share = start_capital_share
@@ -42,6 +43,7 @@ class MarketGeneral:
             '-1': {
                 'business_power': float(self.business_power),
                 'co2_emission_total': float(self.co2_emission_total),
+                'count_company': int(self.count_company),
                 'gdp': float(self.gdp),
                 'market_condition': float(self.market_condition),
                 'total_assets': float(self.total_assets),
@@ -72,18 +74,20 @@ class MarketGeneral:
         sigma = self.__assume['stdev_start_assets']/num_companies
         capital = random.gauss(mu, sigma)
 
-        category_of_capital = self.__get_sales_volume_category(capital)
-        mu = self.investment_by_category[category_of_capital]
-        sigma = self.__assume['stdev_start_invest']
-        capital_nature = random.gauss(mu, sigma)
-
-        return  business_value, capital, capital_nature
+        #category_of_capital = self.__get_sales_volume_category(capital)
+        mu = mean(self.__co2_investment_share_pi) #self.investment_by_category[category_of_capital]
+        #sigma = self.__assume['stdev_start_invest']
+        sigma = stdev(self.__co2_investment_share_pi)
+        weight_nature = random.gauss(mu, sigma)
+        self.count_company = num_companies
+        return  business_value, capital, weight_nature
     def sim_start_rest_of_the_world(self, company_list):
         sum_bv = sum([company_list[index].business_value for index in company_list])
         bv_row = self.gdp - sum_bv
         sum_cap = sum([company_list[index].capital for index in company_list])
         cap_row = self.total_assets - sum_cap
-        self.rest_of_the_world = Company(bv_row,cap_row)
+        investment_of_nature = 0 ##todo: calculate, set oder simulate??
+        self.rest_of_the_world = Company(bv_row,cap_row,investment_of_nature)
         return self.rest_of_the_world
 
     def sim_general_market_situation_company(self, company):
@@ -104,8 +108,9 @@ class MarketGeneral:
 
         return business_power, is_alive, market_influence
     def __check_if_survived(self, company):
-        ##todo: to code
-        return True
+        if company.business_value < 0 and company.capital < 0:
+            company.is_alive = False
+        return company.is_alive
 
     def calc_total_assets(self, company_list):
 
@@ -136,8 +141,8 @@ class MarketGeneral:
                                       business_power_last_year,
                                       business_value_last_year,
                                       capital_last_year,
-
-                                      market_influence
+                                      market_influence,
+                                      nature_weight
                                       ):
         delta_capital = (business_value_last_year * business_power_last_year)
         capital =  delta_capital + capital_last_year
@@ -148,7 +153,10 @@ class MarketGeneral:
         delta_business_value = capital_business * market_influence
         business_value = business_value_last_year + delta_business_value
 
-        return business_value, capital, delta_capital, delta_business_value
+        weight_business     = 1-nature_weight
+        capital_business    = capital*weight_business
+        capital_nature      = capital*nature_weight
+        return business_value, capital, capital_business, capital_nature, delta_capital, delta_business_value
 
 
     def __get_sales_volume_category(self,capital):
@@ -173,6 +181,7 @@ class MarketGeneral:
         self.journal[logId] = {}
         self.journal[logId]['business_power'] = float(self.business_power)
         self.journal[logId]['co2_emission_total'] = float(self.co2_emission_total)
+        self.journal[logId]['count_company'] = int(self.count_company)
         self.journal[logId]['gdp'] = float(self.gdp)
         self.journal[logId]['market_condition'] = float(self.market_condition)
         self.journal[logId]['total_assets'] = float(self.total_assets)
@@ -182,6 +191,7 @@ class MarketGeneral:
         return {
             'business_power': float(self.business_power),
             'co2_emission_total': float(self.co2_emission_total),
+            'count_company': int(self.count_company),
             'gdp': float(self.gdp),
             'market_condition': float(self.market_condition),
             'total_assets': float(self.total_assets),

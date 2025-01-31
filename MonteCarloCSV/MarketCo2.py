@@ -31,6 +31,7 @@ class MarketCo2:
         self.journal={
             '-1': {
                 'state_of_atmosphere': float(self.state_of_atmosphere),
+                'total_capital_nature': float(self.total_capital_nature),
                 'co2_emission_big': float(self.co2_emission_big),
                 'co2_intensity': float(self.co2_intensity),
                 'co2_price': float(self.co2_price),
@@ -258,6 +259,7 @@ class MarketCo2:
     def log_to_journal(self, logId):
         self.journal[logId] = {}
         self.journal[logId]['state_of_atmosphere'] = float(self.state_of_atmosphere)
+        self.journal[logId]['total_capital_nature'] = float(self.total_capital_nature)
         self.journal[logId]['co2_emission_big'] = float(self.co2_emission_big)
         self.journal[logId]['co2_intensity'] = float(self.co2_intensity)
         self.journal[logId]['co2_price'] = float(self.co2_price)
@@ -266,6 +268,7 @@ class MarketCo2:
     def to_dict(self):
         return {
             'state_of_atmosphere': float(self.state_of_atmosphere),
+            'total_capital_nature': float(self.total_capital_nature),
             'co2_emission_big': float(self.co2_emission_big),
             'co2_intensity' : float(self.co2_intensity),
             'co2_price': float(self.co2_price)

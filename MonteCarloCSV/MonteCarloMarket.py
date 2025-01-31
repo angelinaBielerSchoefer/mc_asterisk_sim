@@ -91,10 +91,9 @@ class MonteCarloMarket:
         else:
             print("skipped")
             #mc_result['sc1'] = self.__run_simulation_competitive_pricing( target_year+3, mc_result['data'])
-        self.__format_validation(mc_result['data']['co2_intensity'],"mc data co2 intensity")
 
-        for year, entry in mc_result['sc1'][0]['co2_market'].journal.items():
-            print("year {0}:co2_intensity {1}".format(year,entry['co2_intensity']))
+        #for year, entry in mc_result['sc1'][0]['co2_market'].journal.items():
+        #    print("year {0}:co2_intensity {1}".format(year,entry['co2_intensity']))
 
         print("----- Execution of Scenario 2 -----")
         print("not yet Implemented")
@@ -407,12 +406,6 @@ class MonteCarloMarket:
                 data_collection['delta_gdp'][cnt_y] = data_collection['gdp'][cnt_y] - data_collection['gdp'][cnt_y-1]
             if cnt_y in data_collection['co2_intensity'] and (cnt_y-1) in data_collection['co2_intensity']:
                 data_collection['delta_co2_intensity'][cnt_y] = [data_collection['co2_intensity'][cnt_y] - data_collection['co2_intensity'][cnt_y-1]]
-            if cnt_y in data_collection['investment_by_company_category']:
-                investment = 0
-                for category,entry in data_collection['investment_by_company_category'][cnt_y].items():
-                    investment+= entry
-                data_collection['co2_investment'][cnt_y] = investment
-                data_collection['share_of_co2_investment'][cnt_y] = investment
             if cnt_y in data_collection['co2_price']:
                 data_collection['co2_price'][cnt_y] =[data_collection['co2_price'][cnt_y]]
             if cnt_y in data_collection['co2_price'] and (cnt_y-1) in data_collection['co2_price']:
@@ -439,6 +432,8 @@ class MonteCarloMarket:
 
                 data_collection['co2_consumption'][cnt_y] = [co2_consumption * r_factor] # calc to giga tonns
 
+
+
             if cnt_y in data_collection['investment_by_company_category']['unter 2 Mill EUR']:
                 for category in data_collection['assume']['prop_sales_volume']:
                     if not category in data_collection['sales_volume_category']:
@@ -461,13 +456,24 @@ class MonteCarloMarket:
                             value = data_collection['investment_by_company_category']['50 Mill EUR und mehr'][cnt_y]
                             data_collection['sales_volume_category'][category][cnt_y] = value
 
+            investment = 0
+            for category,entry in data_collection['investment_by_company_category'].items():
+                if cnt_y in entry:
+                    investment+= entry[cnt_y]
 
-            cnt_y+=1
+            if not investment == 0 and cnt_y in data_collection['total_assets']:
+                data_collection['co2_investment'][cnt_y] = [investment]
+                data_collection['share_of_co2_investment'][cnt_y] = [investment/data_collection['total_assets'][cnt_y]]
+
             ### calc delta capital
             if cnt_y in data_collection['total_assets'] and cnt_y-1 in data_collection['total_assets']:
                 data_collection['delta_capital'][cnt_y] = data_collection['total_assets'][cnt_y] - data_collection['total_assets'][cnt_y-1]
                 data_collection['capital_business'][cnt_y] = data_collection['total_assets'][cnt_y]
                 data_collection['capital_nature'][cnt_y] = 0.0
+            cnt_y+=1
+
+
+        #print("share_of_co2_investment: {0}".format(data_collection['share_of_co2_investment']))
         data_collection['business_power']       = self.__calc_business_power(data_collection['gdp'], data_collection['delta_capital'])
         data_collection['market_conditions']    = self.__calc_market_conditions(data_collection['delta_gdp'], data_collection['total_assets'])
         #Create simulation base
@@ -475,7 +481,8 @@ class MonteCarloMarket:
         data_collection['business_value_share_pi']      = self.create_sim_base(data_collection['share_of_gdp'])
         data_collection['capital_share_pi']             = self.create_sim_base(data_collection['share_of_total_assets'])
         data_collection['co2_consumption_pi']           = self.create_sim_base(data_collection['co2_consumption'])
-        data_collection['co2_investment_share_pi']      = self.create_sim_base(data_collection['co2_investment_share'])
+
+        data_collection['co2_investment_share_pi']      = self.create_sim_base(data_collection['share_of_co2_investment'])
         data_collection['co2_price_pi']                 = self.create_sim_base(data_collection['co2_price'])
         data_collection['delta_co2_emission_pi']        = self.create_sim_base(data_collection['delta_co2_emission'])
         data_collection['delta_co2_intensity_pi']       = self.create_sim_base(data_collection['delta_co2_intensity'])
@@ -530,8 +537,8 @@ class MonteCarloMarket:
         cnt_com=0
         com_list = {}
         while cnt_com<self.number_companies:
-            business_value_start, capital_start, capital_nature_start = general_market.sim_start_of_company(self.number_companies)
-            company = Company(business_value_start, capital_start)
+            business_value_start, capital_start, weight_nature_start = general_market.sim_start_of_company(self.number_companies)
+            company = Company(business_value_start, capital_start, weight_nature_start)
             company.business_power, company.is_alive, company.market_influence = general_market.sim_general_market_situation_company(company)
             com_list[cnt_com] = company
             cnt_com+= 1
@@ -655,7 +662,7 @@ class MonteCarloMarket:
     def __simulate_one_year_of_market_competitive(self, company_list, co2_market, general_market, progress_counter):
 
         ###1. Sim general market
-
+        general_market.count_company = len(company_list)
         general_market.sim_new_year()
         co2_market.sim_new_year_co2()
         #with ProcessPoolExecutor() as executor:
@@ -666,6 +673,7 @@ class MonteCarloMarket:
         gdp = general_market.rest_of_the_world.business_value
         total_capital = general_market.rest_of_the_world.capital
         big_co2 = 0
+        capital_nature = general_market.rest_of_the_world.capital_nature
         for index in company_list:
             company=company_list[index]
             business_value_ly = company.business_value
@@ -674,6 +682,7 @@ class MonteCarloMarket:
             gdp += company.business_value
             total_capital += company.capital
             big_co2 += company.co2_emission #in  mio metric tons
+            capital_nature+=company.weight_nature
         total_co2 = general_market.rest_of_the_world.co2_emission + big_co2
 
         ###4. calc general market
@@ -683,15 +692,15 @@ class MonteCarloMarket:
         ###5. calc co2 market
         #co2_market.co2_intensity = total_co2/gdp
         co2_market.co2_emission_big = big_co2
+        co2_market.total_capital_nature = capital_nature
 
 
         ###6.calc co2 market
         #calc co2 demand for trade
         #calc co2 supply for trade
-        #calc co2 compensation
-
-
+        #calc co2 compensationplo
         return progress_counter
+
     def __run_pricefinding_one_year_of_market_competitive(self, co2_market, company_list):
         supplier_prices = [co2_market.co2_price]
         demander = [company_list[index] for index in company_list if company_list[index].co2_demand > 0]
@@ -739,18 +748,19 @@ class MonteCarloMarket:
 
         business_power_last_year = company.business_power
         business_value_last_year = company.business_value
-        capital_last_year = company.capital
+        capital_last_year = company.capital_business
         co2_emission_last_year = company.co2_emission
 
         #progress_counter += 1
         ###2. sim general_market conditions for this single company
         company.business_power, company.is_alive, company.market_influence = general_market.sim_general_market_situation_company(company)
         ###3. calc company status related to general market conditions
-        company.business_value, company.capital,  company.delta_capital, company.delta_business_value = general_market.calc_general_situation_company(
+        company.business_value, company.capital, company.capital_business, company.capital_nature, company.delta_capital, company.delta_business_value = general_market.calc_general_situation_company(
             business_power_last_year,
             business_value_last_year,
-            co2_emission_last_year,
-            company.market_influence
+            capital_last_year,
+            company.market_influence,
+            company.weight_nature
         )
 
 
@@ -900,13 +910,15 @@ class MonteCarloMarket:
         # [4] = unit
 
         plot_labels = [
+            ('co2_market', 'capital_nature', 'co2_investment', 'total_capital_nature','mrd Euro'),
             ('co2_market', 'Co2_Price', 'co2_price', 'co2_price','Euro / kg Co2 equivalence'),
+            ('general_market', 'Count_company', '', 'count_company','number of surviving companies'),
             ('general_market', 'Co2_Emission_total', 'co2_emission', 'co2_emission_total','mio metric tones Co2 Emission'),
             ('co2_market', 'Co2_Intensity', 'co2_intensity', 'co2_intensity','mio metric tones Co2 Emission per mrd Euro'),
             ('general_market', 'gdp', 'gdp', 'gdp', 'in Mrd Euro'),
             ('general_market', 'capital', 'capital_business', 'total_assets', 'in Mrd Euro')
         ]
-
+        #self.transform_data_and_plot(('general_market', 'Count_company', '', 'count_company','number of surviving companies'),)
         with ProcessPoolExecutor() as executor:
             keys = plot_labels
             executor.map(self.transform_data_and_plot, keys)
@@ -928,8 +940,9 @@ class MonteCarloMarket:
         unit = tuple[4]
 
         data['data'] = {}
-        for year,value in mc_result['data'][data_label].items():
-            data['data'][year] ={'mean': value}
+        if not data_label == '':
+            for year,value in mc_result['data'][data_label].items():
+                data['data'][year] = {'mean': value}
 
         for scenario in mc_result:
             if not scenario in data:
