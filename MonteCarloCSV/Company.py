@@ -1,5 +1,3 @@
-import random
-
 
 class Company:
     def __init__(self, business_value_start,
@@ -14,3 +12,4 @@ class Company:
 
         self.business_power = 0.0
         self.market_influence = 0.0
+        self.is_alive = True

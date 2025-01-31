@@ -45,8 +45,13 @@ class MarketCo2:
 
     def sim_new_year_co2(self):#, delta_co2_intensity_last_year):
         # sim co2 intesity delta
+
+        #print("co2_intensity by start: {0}".format(self.co2_intensity))
         self.delta_co2_intensity = self.__sim_delta_co2_intensity()
+        #print("delta_co2_intensity simulated: {0}".format(self.delta_co2_intensity))
         self.co2_intensity += self.delta_co2_intensity
+        #print("co2_intensity at end: {0}".format(self.co2_intensity))
+
         #todo: sim free allowances
         #todo: sim subventionen
 

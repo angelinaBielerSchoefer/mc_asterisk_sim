@@ -9,21 +9,17 @@ class MarketGeneral:
                  start_business_value_share,
                  start_capital_share,
                  start_co2_emission_total,
+                 co2_investment_share_pi,
                  gdp_start,
                  investment_by_category,
                  market_condition_pi,
                  start_year,
-                 target_year,
                  total_assets_start):
         self.__market_condition_pi = market_condition_pi
         self.__business_power_pi = business_power_pi
-
-
-
-
+        self.__co2_investment_share_pi =co2_investment_share_pi
         self.__assume = assume
         self.rest_of_the_world = None
-
 
         self.__set_business_power_global()
         self.__set_market_condition_global()
@@ -95,11 +91,13 @@ class MarketGeneral:
         ### random distributed with assumed deviation
         mu = self.business_power
         deviation = self.__assume['stdev_business_power']
-        business_power = random.uniform(mu-deviation, mu+deviation)
+        business_power = random.gauss(mu, deviation)
+        #business_power = random.uniform(mu-deviation, mu+deviation)
 
         mu = self.market_condition
         deviation = self.__assume['stdev_market_influence']
-        market_influence = random.uniform(mu-deviation, mu+deviation)
+        market_influence = random.gauss(mu,deviation)
+        #market_influence = random.uniform(mu-deviation, mu+deviation)
 
 
         is_alive = self.__check_if_survived(company)
@@ -138,7 +136,7 @@ class MarketGeneral:
                                       business_power_last_year,
                                       business_value_last_year,
                                       capital_last_year,
-                                      co2_emission_last_year,
+
                                       market_influence
                                       ):
         delta_capital = (business_value_last_year * business_power_last_year)
@@ -150,8 +148,7 @@ class MarketGeneral:
         delta_business_value = capital_business * market_influence
         business_value = business_value_last_year + delta_business_value
 
-        co2_emission = co2_emission_last_year #todo: calc co2_emissions
-        return business_value, capital, co2_emission, delta_capital, delta_business_value
+        return business_value, capital, delta_capital, delta_business_value
 
 
     def __get_sales_volume_category(self,capital):

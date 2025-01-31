@@ -8,7 +8,7 @@ import random
 from collections import Counter
 from Company import Company
 from concurrent.futures import ProcessPoolExecutor
-from datetime import date, datetime, timedelta
+from datetime import  datetime
 from statistics import stdev, mean
 from MarketCo2 import MarketCo2
 from MarketGeneral import MarketGeneral
@@ -27,7 +27,7 @@ class MonteCarloMarket:
                  #Ziel 10.000 Trials
                  number_companies, #000,
                  #Ziel 500.000 Großunternehmen in Deutschland
-                 assume ={},
+                 assume,
                  parallel = True,
                  save_charts = True,
                  start_year = 2008
@@ -45,7 +45,7 @@ class MonteCarloMarket:
         self.current_year = int(datetime.now().strftime('%Y'))
         self.current_month = int(datetime.now().strftime('%m'))
 
-        script_dir = os.path.dirname(os.path.abspath(__file__))
+        #script_dir = os.path.dirname(os.path.abspath(__file__))
 
     def start_simulation(self,
                          data_atmosphere_year_value,
@@ -58,7 +58,6 @@ class MonteCarloMarket:
                          data_gdp_year_value,
                          data_investment_by_category_year_value,
                          data_total_assets_year_value,
-                         target_year,
                          target_pb,
                          ):
 
@@ -73,7 +72,7 @@ class MonteCarloMarket:
         mc_result['data']['capitals'] = data_capbig_year_value# in million euro
         mc_result['data']['verified_co2_emission'] = data_emissions_year_value # metric tone
         mc_result['data']['co2_price'] = data_co2_price_year_value# UNIT???
-        mc_result['data']['company_category'] = data_investment_by_category_year_value# million eur per staff-size???
+        mc_result['data']['investment_by_company_category'] = data_investment_by_category_year_value# million eur per staff-size???
         mc_result['data']['gdp'] = data_gdp_year_value # in million euro
         mc_result['data']['free_allowances'] = data_co2_free_allowances_value #metric tone
         mc_result['data']['sold_allowances'] = data_co2_sold_allowances_value #metric tone
@@ -92,6 +91,10 @@ class MonteCarloMarket:
         else:
             print("skipped")
             #mc_result['sc1'] = self.__run_simulation_competitive_pricing( target_year+3, mc_result['data'])
+        self.__format_validation(mc_result['data']['co2_intensity'],"mc data co2 intensity")
+
+        for year, entry in mc_result['sc1'][0]['co2_market'].journal.items():
+            print("year {0}:co2_intensity {1}".format(year,entry['co2_intensity']))
 
         print("----- Execution of Scenario 2 -----")
         print("not yet Implemented")
@@ -307,7 +310,7 @@ class MonteCarloMarket:
             streuung_sigma+=0.00000000001
             print("sigma adjusted to avoid devision by zero")
 
-        #Aus der Stichprobe gezogene Testwert
+        #test value taken from sampel
         z = (x_bar - mu_0) / (streuung_sigma / (stichprobenumfang_n ** 0.5))
 
         z_between_min_max = norm.ppf(1 - testlevel_alpha / 2)
@@ -377,6 +380,7 @@ class MonteCarloMarket:
         data_collection['co2_consumption']      = {}
         data_collection['co2_emission']         = {}
         data_collection['co2_intensity']        = {}
+        data_collection['co2_investment']       = {}
         data_collection['delta_capital']        = {}
         data_collection['delta_co2_emission']   = {}
         data_collection['delta_co2_intensity']  = {}
@@ -385,6 +389,7 @@ class MonteCarloMarket:
         data_collection['eco_performance']      = {}
         data_collection['market_conditions']    = {}
         data_collection['sales_volume_category']= {}
+        data_collection['share_of_co2_investment'] = {}
         data_collection['share_of_co2_idle']    = {}
         data_collection['share_of_gdp']         = {}
         data_collection['share_of_total_assets']= {}
@@ -402,6 +407,12 @@ class MonteCarloMarket:
                 data_collection['delta_gdp'][cnt_y] = data_collection['gdp'][cnt_y] - data_collection['gdp'][cnt_y-1]
             if cnt_y in data_collection['co2_intensity'] and (cnt_y-1) in data_collection['co2_intensity']:
                 data_collection['delta_co2_intensity'][cnt_y] = [data_collection['co2_intensity'][cnt_y] - data_collection['co2_intensity'][cnt_y-1]]
+            if cnt_y in data_collection['investment_by_company_category']:
+                investment = 0
+                for category,entry in data_collection['investment_by_company_category'][cnt_y].items():
+                    investment+= entry
+                data_collection['co2_investment'][cnt_y] = investment
+                data_collection['share_of_co2_investment'][cnt_y] = investment
             if cnt_y in data_collection['co2_price']:
                 data_collection['co2_price'][cnt_y] =[data_collection['co2_price'][cnt_y]]
             if cnt_y in data_collection['co2_price'] and (cnt_y-1) in data_collection['co2_price']:
@@ -428,7 +439,7 @@ class MonteCarloMarket:
 
                 data_collection['co2_consumption'][cnt_y] = [co2_consumption * r_factor] # calc to giga tonns
 
-            if cnt_y in data_collection['company_category']['unter 2 Mill EUR']:
+            if cnt_y in data_collection['investment_by_company_category']['unter 2 Mill EUR']:
                 for category in data_collection['assume']['prop_sales_volume']:
                     if not category in data_collection['sales_volume_category']:
                         data_collection['sales_volume_category'][category] = {}
@@ -436,18 +447,18 @@ class MonteCarloMarket:
                         data_collection['sales_volume_category'][category][cnt_y] = []
                     match category:
                         case 'u2':
-                            value = data_collection['company_category']['unter 2 Mill EUR'][cnt_y]
+                            value = data_collection['investment_by_company_category']['unter 2 Mill EUR'][cnt_y]
                             data_collection['sales_volume_category'][category][cnt_y] = value
                         case '2-10':
-                            value = data_collection['company_category']['2 bis unter 5 Mill EUR'][cnt_y]
-                            value += data_collection['company_category']['5 bis unter 10 Mill EUR'][cnt_y]
+                            value = data_collection['investment_by_company_category']['2 bis unter 5 Mill EUR'][cnt_y]
+                            value += data_collection['investment_by_company_category']['5 bis unter 10 Mill EUR'][cnt_y]
                             data_collection['sales_volume_category'][category][cnt_y] = value
                         case '10-50':
-                            value = data_collection['company_category']['10 bis unter 20 Mill EUR'][cnt_y]
-                            value += data_collection['company_category']['20 bis unter 50 Mill EUR'][cnt_y]
+                            value = data_collection['investment_by_company_category']['10 bis unter 20 Mill EUR'][cnt_y]
+                            value += data_collection['investment_by_company_category']['20 bis unter 50 Mill EUR'][cnt_y]
                             data_collection['sales_volume_category'][category][cnt_y] = value
                         case 'o50':
-                            value = data_collection['company_category']['50 Mill EUR und mehr'][cnt_y]
+                            value = data_collection['investment_by_company_category']['50 Mill EUR und mehr'][cnt_y]
                             data_collection['sales_volume_category'][category][cnt_y] = value
 
 
@@ -464,28 +475,26 @@ class MonteCarloMarket:
         data_collection['business_value_share_pi']      = self.create_sim_base(data_collection['share_of_gdp'])
         data_collection['capital_share_pi']             = self.create_sim_base(data_collection['share_of_total_assets'])
         data_collection['co2_consumption_pi']           = self.create_sim_base(data_collection['co2_consumption'])
+        data_collection['co2_investment_share_pi']      = self.create_sim_base(data_collection['co2_investment_share'])
         data_collection['co2_price_pi']                 = self.create_sim_base(data_collection['co2_price'])
-
         data_collection['delta_co2_emission_pi']        = self.create_sim_base(data_collection['delta_co2_emission'])
-        data_collection['delta_co2_intensity_pi']        = self.create_sim_base(data_collection['delta_co2_intensity'])
-        data_collection['delta_co2_price_pi']        = self.create_sim_base(data_collection['delta_co2_price'])
+        data_collection['delta_co2_intensity_pi']       = self.create_sim_base(data_collection['delta_co2_intensity'])
+        data_collection['delta_co2_price_pi']           = self.create_sim_base(data_collection['delta_co2_price'])
         #
 
 
 
 
-        # Parallelisierte Schleife
+        # parallel loop
         categories = list(data_collection['sales_volume_category'].keys())
         investments = list(data_collection['sales_volume_category'].values())
 
         with ProcessPoolExecutor() as executor:
-            # map gibt die Ergebnisse in derselben Reihenfolge zurück wie die Eingabe
             invest_delta = executor.map(self.calc_delta_investment_for_one_cat,investments)
             results = executor.map(self.create_sim_base, invest_delta)
-            # Ergebnisse zurück in das result-Dictionary schreiben
             data_collection['investment_by_category_pi'] = dict(zip(categories, results))
         data_collection['market_conditions_pi']         = self.create_sim_base(data_collection['market_conditions'])
-        self.__format_validation(data_collection['share_of_co2_idle'],"share of idle")
+
 
         return data_collection
     def __create_general_market(self,
@@ -493,10 +502,10 @@ class MonteCarloMarket:
                                 business_value_share_start,
                                 capital_share_start,
                                 start_co2_emission_total,
+                                co2_investment_share_pi,
                                 gdp_start,
                                 investment_by_category,
                                 market_condition_pi,
-                                target_year,
                                 total_assets_start
                                 ):
 
@@ -505,11 +514,11 @@ class MonteCarloMarket:
                                        business_value_share_start,
                                        capital_share_start,
                                        start_co2_emission_total,
+                                       co2_investment_share_pi,
                                        gdp_start,
                                        investment_by_category,
                                        market_condition_pi,
                                        self.start_year,
-                                       target_year,
                                        total_assets_start
                                        )
 
@@ -541,7 +550,6 @@ class MonteCarloMarket:
                             rest_of_the_world,
                             share_of_idle
                             ):
-        print("co2 intensity start: {0}".format(co2_intensity_start))
         co2_emission_big_start = co2_emission_total_start * co2_emission_big_share_start
 
         co2_market = MarketCo2(self.assume,
@@ -595,10 +603,10 @@ class MonteCarloMarket:
             self.mc_data['share_of_gdp'][self.start_year][-1],
             self.mc_data['share_of_total_assets'][self.start_year][-1],
             self.mc_data['co2_emission'][self.start_year],
+            self.mc_data['co2_investment_share_pi'],
             self.mc_data['gdp'][self.start_year],
             self.mc_data['sales_volume_category'],
             self.mc_data['market_conditions_pi'],
-            target_year,
             self.mc_data['total_assets'][self.start_year])
 
         co2_market = self.__create_co2_market(  self.assume['share_of_co2'],
@@ -651,8 +659,8 @@ class MonteCarloMarket:
         general_market.sim_new_year()
         co2_market.sim_new_year_co2()
         #with ProcessPoolExecutor() as executor:
-        #    tupel = [(self, company, general_market) for company in company_list]
-        #    executor.map(lambda args: self.company_run_market(*args), tupel)
+        #    tuple = [(self, company, general_market) for company in company_list]
+        #    executor.map(lambda args: self.company_run_market(*args), tuple)
         progress_counter += len(company_list)
         self.__run_company_market(general_market.rest_of_the_world,general_market)
         gdp = general_market.rest_of_the_world.business_value
@@ -673,7 +681,7 @@ class MonteCarloMarket:
         general_market.gdp = gdp
         general_market.co2_emission_total = total_co2
         ###5. calc co2 market
-        co2_market.co2_intensity = total_co2/gdp
+        #co2_market.co2_intensity = total_co2/gdp
         co2_market.co2_emission_big = big_co2
 
 
@@ -738,10 +746,9 @@ class MonteCarloMarket:
         ###2. sim general_market conditions for this single company
         company.business_power, company.is_alive, company.market_influence = general_market.sim_general_market_situation_company(company)
         ###3. calc company status related to general market conditions
-        company.business_value, company.capital, company.co2_emission, company.delta_capital, company.delta_business_value = general_market.calc_general_situation_company(
+        company.business_value, company.capital,  company.delta_capital, company.delta_business_value = general_market.calc_general_situation_company(
             business_power_last_year,
             business_value_last_year,
-            capital_last_year,
             co2_emission_last_year,
             company.market_influence
         )
@@ -905,20 +912,20 @@ class MonteCarloMarket:
             executor.map(self.transform_data_and_plot, keys)
         return
 
-    def transform_data_and_plot(self, tupel):
+    def transform_data_and_plot(self, tuple):
         mc_result = self.plot_data
-        # tupel
+        # tuple
         # [0] = market
         # [1] = name of plot file and title
         # [2] = label in data
         # [3] = label in scenarios
         # [4] = unit
-        market = tupel[0]
+        market = tuple[0]
         data = {}
-        plot_name = tupel[1]
-        data_label = tupel[2] #plot_label[0]
-        sce_label = tupel[3] #plot_label[1]
-        unit = tupel[4]
+        plot_name = tuple[1]
+        data_label = tuple[2] #plot_label[0]
+        sce_label = tuple[3] #plot_label[1]
+        unit = tuple[4]
 
         data['data'] = {}
         for year,value in mc_result['data'][data_label].items():
@@ -939,8 +946,8 @@ class MonteCarloMarket:
                             trial_list[year] = []
                         trial_list[year].append(mc_result[scenario][cnt][market].journal[year][sce_label])
                         mean_v = mean(trial_list[year])
-                        min_v = np.percentile(trial_list[year], 2.5, axis=0)  # Untere 2.5%
-                        max_v = np.percentile(trial_list[year], 97.5, axis=0)  # Obere 97.5%
+                        min_v = np.percentile(trial_list[year], 2.5, axis=0)  # lower 2.5%
+                        max_v = np.percentile(trial_list[year], 97.5, axis=0)  # upper 97.5%
                         data[scenario][year]['min'] = min_v
                         data[scenario][year]['mean'] = mean_v
                         data[scenario][year]['max'] = max_v
@@ -993,7 +1000,7 @@ class MonteCarloMarket:
         list_data = []
         dict_data = {}
         array_data = np.zeros((5,2))
-        tupel_data = ()
+        tuple_data = ()
 
         t_trials = 10000
         t_com = 500000
@@ -1001,18 +1008,18 @@ class MonteCarloMarket:
         t_variables = 10
         for var in range(t_variables):
             list_data.append([])
-            tupel_data.__add__(())
+            tuple_data.__add__(())
             for year in range(t_years):
-                tupel_data[var].__add__(())
+                tuple_data[var].__add__(())
                 list_data[var].append([])
                 for com in range(t_com):
-                    tupel_data[var][com].__add__(())
+                    tuple_data[var][com].__add__(())
                     list_data[var][com].append([])
                     for trial in range(t_trials):
                         list_data[var][com][year].append(1.0)
-                        tupel_data[var][com][year].__add__(1.0)
+                        tuple_data[var][com][year].__add__(1.0)
 
         print ("sizeof list data: {0}".format(sys.getsizeof(list_data)))
         print ("sizeof dict data: {0}".format(sys.getsizeof(dict_data)))
         print ("sizeof array data: {0}".format(sys.getsizeof(array_data)))
-        print ("sizeof tupel data: {0}".format(sys.getsizeof(tupel_data)))
+        print ("sizeof tuple data: {0}".format(sys.getsizeof(tuple_data)))

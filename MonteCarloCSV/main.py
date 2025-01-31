@@ -2,7 +2,7 @@ import argparse
 from datetime import datetime, timedelta
 import os
 
-from pycparser.c_ast import Default
+#from pycparser.c_ast import Default
 
 from MonteCarloPlanetaryBoundary import MonteCarloPlanetaryBoundary
 from MonteCarloMarket import MonteCarloMarket
@@ -257,7 +257,7 @@ def main():
                     'share_of_co2':float(0.8),
                     'share_of_idle':float(0.5),
                     'stdev_business_power': float(0.188),#0.188 stdev of business power over the year
-                    'stdev_delta_co2_intensity': float(0.0012),#Randomly chosen
+                    'stdev_delta_co2_intensity': float(0.12),#Randomly chosen
                     'stdev_market_influence': float(0.018),#0.018 stdev of marketconditions over the years
                     'stdev_start_assets': float(2.9),##2,9 stdev of data total assets over the years
                     'stdev_start_invest': float(1.0),
@@ -503,7 +503,6 @@ def main():
                                                                          data_gdp_year_value,
                                                                          data_investment_by_category_year_value,
                                                                          data_total_assets_year_value,
-                                                                         target_year,
                                                                          pb_name,
                                                                          )
 
