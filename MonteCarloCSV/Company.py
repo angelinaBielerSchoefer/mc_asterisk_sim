@@ -10,6 +10,7 @@ class Company:
         self.weight_business = 1- weight_nature
         self.weight_nature =  weight_nature
 
+        self.co2_apply_free = 0.0
         self.co2_emission_idle = 0.0
         self.co2_intensity = 0.0 # tons per 1000 euro business_value
         self.co2_emission = 0.0
@@ -19,3 +20,23 @@ class Company:
         self.business_power = 0.0
         self.market_influence = 0.0
         self.is_alive = True
+        self.invoice = {
+            'free' : [(0,0)],
+            'sale' : [(0,0)],
+            'vcm'  : [(0,0)],
+            'tax'  : [(0,0)]
+        }
+        self.journal={
+            -1: {
+                'business_value': float(self.business_value),
+                'capital': float(self.capital),
+                'invoice':self.invoice
+            }
+        }
+
+    def log_to_journal(self, logId):
+        self.journal[logId] = {}
+        self.journal[logId]['business_value'] = float(self.business_value)
+        self.journal[logId]['capital'] = float(self.capital)
+        self.journal[logId]['invoice'] = self.invoice
+        return self.journal

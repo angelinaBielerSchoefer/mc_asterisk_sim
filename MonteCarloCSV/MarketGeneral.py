@@ -40,7 +40,7 @@ class MarketGeneral:
         self.investment_by_category = investment
 
         self.journal={
-            '-1': {
+            -1: {
                 'business_power': float(self.business_power),
                 'co2_emission_total': float(self.co2_emission_total),
                 'count_company': int(self.count_company),
@@ -111,9 +111,17 @@ class MarketGeneral:
 
         return business_power, is_alive, market_influence
     def __check_if_survived(self, company):
-        if company.business_value < 0 and company.capital < 0:
+        year = max(company.journal.keys())
+        death_counter = 0
+        while year in company.journal:
+            if company.journal[year]['business_value'] < 0 and company.journal[year]['capital'] < 0:
+                death_counter += 1
+                year -= 1
+            else:
+                year = 0
+        if death_counter > 10:
             company.is_alive = False
-            #pass
+
         return company.is_alive
 
     def calc_total_assets(self, company_list):

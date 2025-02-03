@@ -13,8 +13,9 @@ class MarketCo2:
                  delta_co2_emission_pi,
                  delta_co2_intensity_pi,
                  delta_co2_price_pi,
+                 delta_free_allowance_pi,
                  free_allowances_start,
-                 offered_allowances_start,
+                 sale_allowances_start,
                  ):
         self.__assume = assume
         self.__cross_sectoral_correction_factor = free_allowances_start / co2_emission_big_start
@@ -22,30 +23,33 @@ class MarketCo2:
         self.__delta_co2_intensity_pi       = delta_co2_intensity_pi
         self.__delta_co2_price_pi           = delta_co2_price_pi
         self.__delta_capital_nature_pi      = delta_capital_nature_pi
-        self.__factor_free_allowances        = 1- assume['reduce_free_allowances']
+        self.__delta_free_allowances_pi     = delta_free_allowance_pi
+        self.__factor_free_allowances       = 1- assume['reduce_free_allowances']
 
         self.free_allowances    = free_allowances_start
-        self.offered_allowances = offered_allowances_start
+        self.sale_allowances    = sale_allowances_start
         self.co2_emission_big   = co2_emission_big_start
 
         self.co2_intensity      = co2_intensity_start
         self.co2_price          = co2_price_start
         self.delta_co2_intensity = self.__sim_delta_co2_intensity()
+        self.delta_free_allowances = self.__sim_delta_free_allowances()
 
         self.state_of_atmosphere = 0
         total_capital_nature_start = 10000
         self.delta_capital_nature = 0
         self.total_capital_nature = total_capital_nature_start
 
+
         self.journal={
-            '-1': {
+            -1: {
                 'state_of_atmosphere': float(self.state_of_atmosphere),
                 'total_capital_nature': float(self.total_capital_nature),
                 'co2_emission_big': float(self.co2_emission_big),
                 'co2_intensity': float(self.co2_intensity),
                 'co2_price': float(self.co2_price),
                 'free_allowances': float(self.free_allowances),
-                'offered_allowances': float(self.offered_allowances),
+                'sale_allowances': float(self.sale_allowances),
             }
         }
 
@@ -64,9 +68,14 @@ class MarketCo2:
         self.co2_intensity += self.delta_co2_intensity
         #print("co2_intensity at end: {0}".format(self.co2_intensity))
 
-        #todo: sim factor free allowances
         #assumption = 2,5%
-        self.free_allowances = self.free_allowances*self.__factor_free_allowances
+        self.delta_free_allowances = self.__sim_delta_free_allowances()
+        self.free_allowances = self.free_allowances + self.delta_free_allowances
+        if self.free_allowances < 0:
+            self.free_allowances = 0
+
+        #* self.__factor_free_allowances
+
         self.delta_capital_nature =  self.__sim_delta_capital_nature()
         self.total_capital_nature +=  self.delta_capital_nature
         sum_cap_n = sum([company_list[index].capital_nature for index in company_list])
@@ -93,6 +102,12 @@ class MarketCo2:
         delta_co2_intensity = random.gauss(mean(self.__delta_co2_intensity_pi),stdev(self.__delta_co2_intensity_pi))
         self.__delta_co2_intensity_pi.append(delta_co2_intensity)
         return delta_co2_intensity
+    def __sim_delta_free_allowances(self):
+        sigma = stdev(self.__delta_free_allowances_pi)
+        mu = mean(self.__delta_free_allowances_pi)
+        delta_free_allowances = random.uniform(mu, mu-sigma)
+        self.__delta_free_allowances_pi.append(delta_free_allowances)
+        return delta_free_allowances
 
     def calc_company_start_situation(self, business_value, share_of_co2_idle):
         sigma = self.__assume['stdev_start_co2_intensity']
@@ -115,19 +130,39 @@ class MarketCo2:
 
         co2_supply = 0 #todo: to calculate co2_supply
         co2_demand = co2_emission - co2_supply
-        return capital_nature, co2_demand, co2_emission, co2_supply
 
+        co2_apply_free = co2_emission
+        return capital_nature, co2_apply_free, co2_emission, co2_supply
 
+    def calc_cross_sectoral_correction_factor(self, co2_free_apply):
+        if co2_free_apply == 0:
+            self.__cross_sectoral_correction_factor = 1
+        else:
+            self.__cross_sectoral_correction_factor = self.free_allowances / co2_free_apply
+
+        if self.__cross_sectoral_correction_factor > 1 :
+            self.__cross_sectoral_correction_factor = 1
+
+        return self.__cross_sectoral_correction_factor
     def calc_supplier_price_by_demander_amount(self, demander_amount):
+        low_limit = self.__assume['prices_lower_limit']
+
         min_price = self.__calc_min_price_production()
         factor = (self.total_capital_nature/self.co2_emission_big - min_price)/self.co2_emission_big
         price = factor * demander_amount + min_price
+        if price < low_limit: # lower than 80cent per tCo2
+            price = low_limit
         return price
 
     def calc_demander_price_by_supplier_amount(self, supplier_amount):
+        low_limit = self.__assume['prices_lower_limit']
+
         max_price = self.__calc_max_price_by_requirements()
         factor = max_price / self.co2_emission_big
         price = factor * supplier_amount + max_price
+
+        if price < low_limit: # lower than 80cent per tCo2
+            price = low_limit
         return price
 
     def __calc_max_price_by_requirements(self):
@@ -291,7 +326,7 @@ class MarketCo2:
         self.journal[logId]['co2_intensity'] = float(self.co2_intensity)
         self.journal[logId]['co2_price'] = float(self.co2_price)
         self.journal[logId]['free_allowances'] = float(self.free_allowances)
-        self.journal[logId]['offered_allowances'] = float(self.offered_allowances)
+        self.journal[logId]['sale_allowances'] = float(self.sale_allowances)
 
         return self.journal
     def to_dict(self):
@@ -302,5 +337,5 @@ class MarketCo2:
             'co2_intensity' : float(self.co2_intensity),
             'co2_price': float(self.co2_price),
             'free_allowances': float(self.free_allowances),
-            'offered_allowances': float(self.offered_allowances),
+            'sale_allowances': float(self.sale_allowances),
         }

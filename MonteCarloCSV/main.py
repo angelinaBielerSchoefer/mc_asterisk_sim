@@ -236,6 +236,7 @@ def main():
                 trials = args.Trials
                 pb_name = "atmosphere"
                 assume = {
+                    'prices_lower_limit': float(0.8),
                     'prop_sales_volume': {
                         'u2'    : 0.9153, #source destasi.de 2023
                         '2-10'  : 0.062,
