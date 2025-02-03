@@ -350,7 +350,7 @@ class CsvService:
                     data = row.split(delimiter)
                     year = int(data[0])
                     cat = str(data[1])
-                    value = float(data[2])
+                    value = float(data[2]) / 1000000#read in tsd euro rcalc in mrd euro
                     if not cat in dataset:
                         dataset[cat] = {}
                     if not year in dataset[cat]:

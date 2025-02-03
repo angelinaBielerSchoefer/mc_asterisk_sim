@@ -381,6 +381,7 @@ class MonteCarloMarket:
         data_collection['co2_intensity']        = {}
         data_collection['co2_investment']       = {}
         data_collection['delta_capital']        = {}
+        data_collection['delta_capital_nature']        = {}
         data_collection['delta_co2_emission']   = {}
         data_collection['delta_co2_intensity']  = {}
         data_collection['delta_co2_price']      = {}
@@ -470,10 +471,12 @@ class MonteCarloMarket:
                 data_collection['delta_capital'][cnt_y] = data_collection['total_assets'][cnt_y] - data_collection['total_assets'][cnt_y-1]
                 data_collection['capital_business'][cnt_y] = data_collection['total_assets'][cnt_y]
                 data_collection['capital_nature'][cnt_y] = 0.0
+            if cnt_y in data_collection['co2_investment'] and (cnt_y-1) in data_collection['co2_investment']:
+                data_collection['delta_capital_nature'][cnt_y] = [data_collection['co2_investment'][cnt_y][-1] - data_collection['co2_investment'][cnt_y-1][-1]]
             cnt_y+=1
 
 
-        #print("share_of_co2_investment: {0}".format(data_collection['share_of_co2_investment']))
+        print("share_of_co2_investment: {0}".format(data_collection['share_of_co2_investment']))
         data_collection['business_power']       = self.__calc_business_power(data_collection['gdp'], data_collection['delta_capital'])
         data_collection['market_conditions']    = self.__calc_market_conditions(data_collection['delta_gdp'], data_collection['total_assets'])
         #Create simulation base
@@ -484,6 +487,7 @@ class MonteCarloMarket:
 
         data_collection['co2_investment_share_pi']      = self.create_sim_base(data_collection['share_of_co2_investment'])
         data_collection['co2_price_pi']                 = self.create_sim_base(data_collection['co2_price'])
+        data_collection['delta_capital_nature_pi']      = self.create_sim_base(data_collection['delta_capital_nature'])
         data_collection['delta_co2_emission_pi']        = self.create_sim_base(data_collection['delta_co2_emission'])
         data_collection['delta_co2_intensity_pi']       = self.create_sim_base(data_collection['delta_co2_intensity'])
         data_collection['delta_co2_price_pi']           = self.create_sim_base(data_collection['delta_co2_price'])
@@ -508,19 +512,18 @@ class MonteCarloMarket:
                                 business_power_pi,
                                 business_value_share_start,
                                 capital_share_start,
-                                start_co2_emission_total,
+                                co2_emission_total_start,
                                 co2_investment_share_pi,
                                 gdp_start,
                                 investment_by_category,
                                 market_condition_pi,
                                 total_assets_start
                                 ):
-
         general_market = MarketGeneral(self.assume,
                                        business_power_pi,
                                        business_value_share_start,
                                        capital_share_start,
-                                       start_co2_emission_total,
+                                       co2_emission_total_start,
                                        co2_investment_share_pi,
                                        gdp_start,
                                        investment_by_category,
@@ -551,9 +554,12 @@ class MonteCarloMarket:
                             co2_intensity_start,
                             co2_price_start,
                             company_list,
+                            delta_capital_nature_pi,
                             delta_co2_emission_pi,
                             delta_co2_intensity_pi,
                             delta_co2_price_pi,
+                            free_allowances_start,
+                            offered_allowances_start,
                             rest_of_the_world,
                             share_of_idle
                             ):
@@ -563,9 +569,12 @@ class MonteCarloMarket:
                                co2_emission_big_start,
                                co2_intensity_start,
                                co2_price_start,
+                               delta_capital_nature_pi,
                                delta_co2_emission_pi,
                                delta_co2_intensity_pi,
-                               delta_co2_price_pi, )
+                               delta_co2_price_pi,
+                               free_allowances_start,
+                               offered_allowances_start,)
         rest_of_the_world.co2_emission = co2_emission_total_start - co2_emission_big_start
         rest_of_the_world.co2_intensity = co2_market.co2_intensity
         for index in company_list:
@@ -621,9 +630,12 @@ class MonteCarloMarket:
                                                 self.mc_data['co2_intensity'][self.start_year],
                                                 self.mc_data['co2_price'][self.start_year][-1],
                                                 company_list,
+                                                self.mc_data['delta_capital_nature_pi'],
                                                 self.mc_data['delta_co2_emission_pi'],
                                                 self.mc_data['delta_co2_intensity_pi'],
                                                 self.mc_data['delta_co2_price_pi'],
+                                                self.mc_data['free_allowances'][self.start_year],
+                                                self.mc_data['sold_allowances'][self.start_year],
                                                 general_market.rest_of_the_world,
                                                 self.assume['share_of_idle']
                                                 )
@@ -632,6 +644,7 @@ class MonteCarloMarket:
 
         while year < target_year:
             ### simulate
+
             progress_counter = self.__simulate_one_year_of_market_competitive(company_list, co2_market, general_market, progress_counter)
             ## log all infos
             co2_market.log_to_journal(year)
@@ -664,7 +677,8 @@ class MonteCarloMarket:
         ###1. Sim general market
         general_market.count_company = len(company_list)
         general_market.sim_new_year()
-        co2_market.sim_new_year_co2()
+        capital_nature_row = co2_market.sim_new_year_co2(company_list)
+        general_market.rest_of_the_world.capital_nature = capital_nature_row
         #with ProcessPoolExecutor() as executor:
         #    tuple = [(self, company, general_market) for company in company_list]
         #    executor.map(lambda args: self.company_run_market(*args), tuple)
@@ -676,18 +690,21 @@ class MonteCarloMarket:
         capital_nature = general_market.rest_of_the_world.capital_nature
         for index in company_list:
             company=company_list[index]
-            business_value_ly = company.business_value
             self.__run_company_market(company,general_market)
             self.__run_company_co2(company, co2_market)
             gdp += company.business_value
             total_capital += company.capital
             big_co2 += company.co2_emission #in  mio metric tons
             capital_nature+=company.weight_nature
+
+
         total_co2 = general_market.rest_of_the_world.co2_emission + big_co2
 
         ###4. calc general market
         general_market.total_assets = total_capital
         general_market.gdp = gdp
+
+
         general_market.co2_emission_total = total_co2
         ###5. calc co2 market
         #co2_market.co2_intensity = total_co2/gdp
@@ -734,9 +751,11 @@ class MonteCarloMarket:
         capital = company.capital
         co2_intensity_last_year = company.co2_intensity
         co2_emission_ly = company.co2_emission
+        weight_nature_last_year = company.weight_nature
         ###2. sim general_market conditions for this single company
-        company.co2_intensity, company.nature_weight = co2_market.sim_co2_market_situation_company(co2_intensity_last_year)
+        company.co2_intensity = co2_market.sim_co2_market_situation_company(co2_intensity_last_year)
         ###3. calc company status related to general market conditions
+        company.nature_weight = 0.25 ###todo:berechne nature weight
         company.capital_nature, company.co2_demand, company.co2_emission, company.co2_supply = co2_market.calc_co2_market_situation_company(
             business_value,
             capital,
@@ -756,7 +775,7 @@ class MonteCarloMarket:
         company.business_power, company.is_alive, company.market_influence = general_market.sim_general_market_situation_company(company)
         ###3. calc company status related to general market conditions
         company.business_value, company.capital, company.capital_business, company.capital_nature, company.delta_capital, company.delta_business_value = general_market.calc_general_situation_company(
-            business_power_last_year,
+            company.business_power,
             business_value_last_year,
             capital_last_year,
             company.market_influence,
@@ -915,6 +934,8 @@ class MonteCarloMarket:
             ('general_market', 'Count_company', '', 'count_company','number of surviving companies'),
             ('general_market', 'Co2_Emission_total', 'co2_emission', 'co2_emission_total','mio metric tones Co2 Emission'),
             ('co2_market', 'Co2_Intensity', 'co2_intensity', 'co2_intensity','mio metric tones Co2 Emission per mrd Euro'),
+            ('co2_market', 'Free_allowances', 'free_allowances', 'free_allowances','in ??? Co2'),
+            ('co2_market', 'Sold_Allowances', 'sold_allowances', 'offered_allowances','in ??? Co2'),
             ('general_market', 'gdp', 'gdp', 'gdp', 'in Mrd Euro'),
             ('general_market', 'capital', 'capital_business', 'total_assets', 'in Mrd Euro')
         ]

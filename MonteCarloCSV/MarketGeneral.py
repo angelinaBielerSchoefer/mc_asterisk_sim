@@ -71,16 +71,19 @@ class MarketGeneral:
         sigma = self.__assume['stdev_start_value']/num_companies
         business_value = random.gauss(mu, sigma)
         mu = self.total_assets * self.start_capital_share / num_companies
-        sigma = self.__assume['stdev_start_assets']/num_companies
+        sigma = self.__assume['stdev_start_assets']
         capital = random.gauss(mu, sigma)
-
+        capital_business = capital
         #category_of_capital = self.__get_sales_volume_category(capital)
         mu = mean(self.__co2_investment_share_pi) #self.investment_by_category[category_of_capital]
+
         #sigma = self.__assume['stdev_start_invest']
         sigma = stdev(self.__co2_investment_share_pi)
+
         weight_nature = random.gauss(mu, sigma)
         self.count_company = num_companies
-        return  business_value, capital, weight_nature
+        return  business_value, capital,weight_nature
+
     def sim_start_rest_of_the_world(self, company_list):
         sum_bv = sum([company_list[index].business_value for index in company_list])
         bv_row = self.gdp - sum_bv
@@ -110,6 +113,7 @@ class MarketGeneral:
     def __check_if_survived(self, company):
         if company.business_value < 0 and company.capital < 0:
             company.is_alive = False
+            #pass
         return company.is_alive
 
     def calc_total_assets(self, company_list):
@@ -124,38 +128,28 @@ class MarketGeneral:
         return self.total_assets
 
 
-    def calc_gdp(self, company_list):
-        new_gdp = 0
-        for index in company_list:
-            company = company_list[index]
 
-            if company.is_alive:
-                new_gdp += company.business_value
-        new_gdp+= self.rest_of_the_world.business_value
-        delta_gdp = new_gdp - self.gdp
-        self.gdp = new_gdp
-        return self.gdp, delta_gdp
 
 
     def calc_general_situation_company(self,
-                                      business_power_last_year,
+                                      business_power,
                                       business_value_last_year,
                                       capital_last_year,
                                       market_influence,
                                       nature_weight
                                       ):
-        delta_capital = (business_value_last_year * business_power_last_year)
+        delta_capital = (business_value_last_year * business_power)
         capital =  delta_capital + capital_last_year
 
-        weight_business = 1 #-weight_nature
-        capital_business = capital*weight_business
+        nature_weight = 0
+        weight_business = 1 - nature_weight
+        capital_business = capital * weight_business
+        capital_nature = capital * nature_weight
+
 
         delta_business_value = capital_business * market_influence
         business_value = business_value_last_year + delta_business_value
 
-        weight_business     = 1-nature_weight
-        capital_business    = capital*weight_business
-        capital_nature      = capital*nature_weight
         return business_value, capital, capital_business, capital_nature, delta_capital, delta_business_value
 
 
