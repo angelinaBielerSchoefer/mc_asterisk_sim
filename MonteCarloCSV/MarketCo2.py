@@ -95,7 +95,7 @@ class MarketCo2:
         sum_cap_n = sum([company_list[index].capital_nature for index in company_list])
         capital_nature_row = self.total_capital_nature - sum_cap_n
 
-        #todo: sim subventionen
+
 
         return capital_nature_row
 
@@ -143,13 +143,13 @@ class MarketCo2:
                                           capital,
                                           co2_emission_idle,
                                           co2_intensity,
-                                          nature_weight):
+                                          weight_nature):
 
         co2_emission = co2_intensity * business_value + co2_emission_idle
-        capital_nature = capital * nature_weight
+        capital_nature = capital * weight_nature
 
 
-        #co2_supply = 0 #todo: to calculate co2_supply
+        #co2_supply = 0
         #co2_demand = co2_emission - co2_supply
 
         co2_apply_free = co2_emission
@@ -187,14 +187,12 @@ class MarketCo2:
         return price
 
     def __calc_max_price_by_requirements(self):
-        external_influence = 1.23 #todo: simulate
+        external_influence = 1.23
         price = self.total_capital_nature / self.co2_emission_big + external_influence
         return price
 
     def __calc_min_price_production(self):
-        #### todo: prüfen und begründen
-        delta_co2_price = [1.23,2.5,0.2,-2.1,1.1]
-        tendence = mean(delta_co2_price)
+        tendence = mean(self.__delta_co2_price_pi)
         forcast = self.co2_price + tendence
         delta_demand_predicted = 500 #additional co2_emissions
         delta_capital_nature = 1000
@@ -271,7 +269,7 @@ class MarketCo2:
     #    return
 
     def optimize_markt_price_valuebased(self,company_list, try_price):
-        ##todo: Impact price optimierung, stimmt das so???
+        ##to do: Impact price optimierung, stimmt das so???
         print("TODO: Verify optimization algorithm for value based prize optimization")
         optimum_price = abs(self.get_impact_price())
         try_price = abs(try_price)
@@ -309,7 +307,17 @@ class MarketCo2:
         #    impact_price.append(new_price)
         return impact_price
 
+    def price_finding_to_sale_allowances(self, company_list):
+        supplier_prices = [self.co2_price]
+        demander = [company_list[index] for index in company_list if company_list[index].co2_demand > 0]
+        for company in demander:
+            demander_amount = company.co2_demand
+            supplier_prices.append(self.calc_supplier_price_by_demander_amount(demander_amount))
 
+        demander_price = self.calc_demander_price_by_supplier_amount(self.co2_supply)
+        #### ASSUMPTION!!!!!
+        self.co2_price = random.gauss(mean([demander_price, mean(supplier_prices)]), stdev([demander_price, mean(supplier_prices)]))
+        return demander
     def get_impact_price(self):
         return self.__calc_impact_price(self.co2_price, self.state_of_atmosphere)
 

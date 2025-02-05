@@ -1,3 +1,5 @@
+import random
+
 
 class Company:
     def __init__(self, business_value_start,
@@ -10,12 +12,20 @@ class Company:
         self.weight_business = 1- weight_nature
         self.weight_nature =  weight_nature
 
-        self.co2_apply_free = 0.0
-        self.co2_emission_idle = 0.0
-        self.co2_intensity = 0.0 # tons per 1000 euro business_value
-        self.co2_emission = 0.0
-        self.co2_demand = 37.54
-        self.co2_supply = 0
+        self.co2_apply_free     = 0.0
+        self.co2_emission       = 0.0
+        self.co2_emission_idle  = 0.0
+        self.co2_demand         = 0.0
+        self.co2_intensity      = 0.0
+        self.co2_supply         = 0.0
+        self.co2_taxes          = 0.0
+
+        #ASSUMPTION!!!!!
+        random_taxable = random.randrange(0,1)
+        if random_taxable > 0.2:
+            self.co2_taxable = True
+        else:
+            self.co2_taxable = False
 
         self.business_power = 0.0
         self.market_influence = 0.0

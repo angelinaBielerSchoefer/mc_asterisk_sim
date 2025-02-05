@@ -82,7 +82,7 @@ class MarketGeneral:
 
         weight_nature = random.gauss(mu, sigma)
         self.count_company = num_companies
-        return  business_value, capital,weight_nature
+        return  business_value, capital, weight_nature
 
     def sim_start_rest_of_the_world(self, company_list):
         sum_bv = sum([company_list[index].business_value for index in company_list])
@@ -144,15 +144,15 @@ class MarketGeneral:
                                       business_value_last_year,
                                       capital_last_year,
                                       market_influence,
-                                      nature_weight
+                                      weight_nature
                                       ):
         delta_capital = (business_value_last_year * business_power_last_year)
         capital =  delta_capital + capital_last_year
 
-        nature_weight = 0
-        weight_business = 1 - nature_weight
+        weight_nature = 0
+        weight_business = 1 - weight_nature
         capital_business = capital * weight_business
-        capital_nature = capital * nature_weight
+        capital_nature = capital * weight_nature
 
 
         delta_business_value = capital_business * market_influence
