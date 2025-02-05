@@ -1,7 +1,5 @@
 import re
 
-from scipy.constants import atmosphere
-
 from WorkItem import WorkItem
 from WorkLoad import WorkLoad
 from Needle import Needle
@@ -282,6 +280,24 @@ class CsvService:
                         dataset[year] = value
 
         return dataset
+    def read_co2_prices_euets(self, delimiter = ";"):
+        dataset = {}
+        file_path = "sim3_co2p.csv"
+        print("Loading Items from CSV File: '{0}'.".format(file_path))
+        with open(file_path, "r") as file:
+            # Iteriere durch jede Zeile der Datei
+            for row in file:
+                # Entferne führende und abschließende Leerzeichen (z. B. '\n')
+                row = row.strip()
+                # Überspringe Zeilen, die mit '#' beginnen
+                if not row.startswith("#"):
+                    data = row.split(delimiter)
+                    year = int(data[1])
+                    value = float(data[2]) *1000000#U.S. dollars per metric ton of CO₂ recalc US$ per mio metric ton
+                    if not year in dataset:
+                        dataset[year] = value
+
+        return dataset
     def read_co2_sold_allowances(self, delimiter = ";"):
         dataset = {}
         file_path = "sim4_solda_ger.csv"
@@ -407,34 +423,6 @@ class CsvService:
             print("Loading finalized: {0} datasets out of file {1}".format(len(storypoints_minutes_map), file_path))
         else: print("unknown time format: {0}".format(time_format))
         return storypoints_minutes_map
-
-    def __convert_to_minutes__(time_string):
-        # Muster zum Extrahieren von "1w", "2d", "3h", "4m"
-        pattern = r"(\d+)[w|d|h|m]"
-
-        # Suche nach allen Vorkommen des Musters
-        matches = re.findall(pattern, time_string)
-
-        # Standardwerte setzen
-        weeks = days = hours = minutes = 0
-
-        # Die Einheiten aus dem String extrahieren
-        for match in re.finditer(r"(\d+)([wdhm])", time_string):
-            value = int(match.group(1))
-            unit = match.group(2)
-
-            if unit == 'w':
-                weeks = value
-            elif unit == 'd':
-                days = value
-            elif unit == 'h':
-                hours = value
-            elif unit == 'm':
-                minutes = value
-
-        # Umrechnung in Minuten
-        total_minutes = (((weeks * 5) + days) * 8 + hours) * 60 + minutes
-        return total_minutes
 
     #### SIM 1 PI
     def read_needles(self, file_path, delimiter, x_column_name, y_column_name):

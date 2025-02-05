@@ -41,8 +41,8 @@ def parse_arguments():
     parser.add_argument("--RemainingMinutes", default="360")
     parser.add_argument("--RemainingStoryPoints", default="10")
 
-    parser.add_argument("--Trials", default="10")
-    parser.add_argument("--NumComp", default="5000")
+    parser.add_argument("--Trials", default="100")
+    parser.add_argument("--NumComp", default="500")
     parser.add_argument("--Run", default="parallel")
 
     return parser.parse_args()
@@ -123,6 +123,9 @@ def get_co2_sold_allowances_value(csv_service):
     return dataset
 def get_co2_price_year_value(csv_service):
     dataset = csv_service.read_co2_prices()
+    return dataset
+def get_co2_price_euets_year_value(csv_service):
+    dataset = csv_service.read_co2_prices_euets()
     return dataset
 def get_investment_compcat_year_value(csv_service):
     dataset = csv_service.read_investmen_by_categorie()
@@ -409,7 +412,7 @@ def main():
 
                 data_emissions_year_value = get_ger_co2_emissions_year_value(csv_service)
                 data_investment_by_category_year_value = get_investment_compcat_year_value(csv_service)
-                data_co2_price_year_value = get_co2_price_year_value(csv_service)
+                data_co2_price_year_value = get_co2_price_euets_year_value(csv_service)
                 data_co2_free_allowances_value = get_co2_free_allowances_value(csv_service)
                 data_co2_sold_allowances_value = get_co2_sold_allowances_value(csv_service)
 

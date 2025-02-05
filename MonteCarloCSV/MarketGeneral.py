@@ -140,13 +140,13 @@ class MarketGeneral:
 
 
     def calc_general_situation_company(self,
-                                      business_power,
+                                      business_power_last_year,
                                       business_value_last_year,
                                       capital_last_year,
                                       market_influence,
                                       nature_weight
                                       ):
-        delta_capital = (business_value_last_year * business_power)
+        delta_capital = (business_value_last_year * business_power_last_year)
         capital =  delta_capital + capital_last_year
 
         nature_weight = 0

@@ -20,17 +20,17 @@ class Company:
         self.business_power = 0.0
         self.market_influence = 0.0
         self.is_alive = True
-        self.invoice = {
-            'free' : [(0,0)],
-            'sale' : [(0,0)],
-            'vcm'  : [(0,0)],
-            'tax'  : [(0,0)]
-        }
+        #self.invoice = {
+        #    'free' : [(0,0)],
+        #    'sale' : [(0,0)],
+        #    'vcm'  : [(0,0)],
+        #    'tax'  : [(0,0)]
+        #}
         self.journal={
             -1: {
                 'business_value': float(self.business_value),
                 'capital': float(self.capital),
-                'invoice':self.invoice
+        #        'invoice':self.invoice
             }
         }
 
@@ -38,5 +38,5 @@ class Company:
         self.journal[logId] = {}
         self.journal[logId]['business_value'] = float(self.business_value)
         self.journal[logId]['capital'] = float(self.capital)
-        self.journal[logId]['invoice'] = self.invoice
+        #self.journal[logId]['invoice'] = self.invoice
         return self.journal
