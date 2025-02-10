@@ -676,7 +676,6 @@ class MonteCarloMarket:
 
         while year < target_year:
             ### simulate
-
             progress_counter +=1
             self.__simulate_one_year_of_market_competitive(company_list, co2_market, general_market, year)
 
@@ -986,7 +985,9 @@ class MonteCarloMarket:
             ('general_market', 'Count_company', '', 'count_company','number of surviving companies'),
             ('general_market', 'Co2_Emission_total', 'co2_emission', 'co2_emission_total','mio metric tones Co2 Emission'),
             ('co2_market', 'Co2_Intensity', 'co2_intensity', 'co2_intensity','mio metric tones Co2 Emission per mrd Euro'),
+            ('co2_market', 'Co2_Subvention', 'co2_subvention', 'co2_subvention','in mrd Euro'),
             ('co2_market', 'Free_allowances', 'free_allowances', 'free_allowances','in ??? Co2'),
+
             ('co2_market', 'Sold_Allowances', 'sold_allowances', 'sale_allowances','in ??? Co2'),
             ('general_market', 'gdp', 'gdp', 'gdp', 'in Mrd Euro'),
             ('general_market', 'capital', 'capital_business', 'total_assets', 'in Mrd Euro')

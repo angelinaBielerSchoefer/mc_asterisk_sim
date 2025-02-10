@@ -164,6 +164,8 @@ class MarketCo2:
         ##ASSUMPTION, calculation required
         co2_intensity = self.sim_co2_intensity(co2_intensity_last_year)
         co2_emission = co2_intensity * business_value + co2_emission_idle
+        if self.co2_subvention == 0:
+            self.co2_subvention = 0.00001
         delta_co2_subvention_share = self.delta_co2_subvention / self.co2_subvention
         co2_subvention = co2_subvention_last_year * (1 + delta_co2_subvention_share)
         capital_nature = capital * weight_nature + co2_subvention

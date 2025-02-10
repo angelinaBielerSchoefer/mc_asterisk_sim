@@ -320,7 +320,7 @@ class CsvService:
         dataset = {}
         year = 2008
         while year <2023:
-            dataset[year] = random.uniform(0,50) #mrd euro
+            dataset[year] = random.uniform(1,50) #mrd euro
             year+=1
         file_path = "sim4_sub_ger.csv"
         #print("Loading Items from CSV File: '{0}'.".format(file_path))
