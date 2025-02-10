@@ -41,7 +41,7 @@ def parse_arguments():
     parser.add_argument("--RemainingMinutes", default="360")
     parser.add_argument("--RemainingStoryPoints", default="10")
 
-    parser.add_argument("--Trials", default="100")
+    parser.add_argument("--Trials", default="1")
     parser.add_argument("--NumComp", default="500")
     parser.add_argument("--Run", default="parallel")
 
@@ -120,6 +120,9 @@ def get_co2_free_allowances_value(csv_service):
     return dataset
 def get_co2_sold_allowances_value(csv_service):
     dataset = csv_service.read_co2_sold_allowances()
+    return dataset
+def get_co2_subvention_value(csv_service):
+    dataset= csv_service.read_co2_subvention()
     return dataset
 def get_co2_price_year_value(csv_service):
     dataset = csv_service.read_co2_prices()
@@ -415,6 +418,7 @@ def main():
                 data_co2_price_year_value = get_co2_price_euets_year_value(csv_service)
                 data_co2_free_allowances_value = get_co2_free_allowances_value(csv_service)
                 data_co2_sold_allowances_value = get_co2_sold_allowances_value(csv_service)
+                data_co2_subvention_value = get_co2_subvention_value(csv_service)
 
         #### SIMULATION execution
 
@@ -504,6 +508,7 @@ def main():
                                                                          data_co2_free_allowances_value,
                                                                          data_co2_price_year_value,
                                                                          data_co2_sold_allowances_value,
+                                                                         data_co2_subvention_value,
                                                                          data_emissions_year_value,
                                                                          data_gdp_year_value,
                                                                          data_investment_by_category_year_value,

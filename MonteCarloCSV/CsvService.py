@@ -316,6 +316,28 @@ class CsvService:
                         dataset[year] = value
 
         return dataset
+    def read_co2_subvention(self, delimiter = ";"):
+        dataset = {}
+        year = 2008
+        while year <2023:
+            dataset[year] = random.uniform(0,50) #mrd euro
+            year+=1
+        file_path = "sim4_sub_ger.csv"
+        #print("Loading Items from CSV File: '{0}'.".format(file_path))
+        #with open(file_path, "r") as file:
+            # Iteriere durch jede Zeile der Datei
+        #    for row in file:
+        #        # Entferne führende und abschließende Leerzeichen (z. B. '\n')
+        #        row = row.strip()
+                # Überspringe Zeilen, die mit '#' beginnen
+        #        if not row.startswith("#"):
+        #            data = row.split(delimiter)
+        #            year = int(data[1])
+         #           value = float(data[5]) / 1000000# metric tone of CO₂-eq recalc to mio metric tone
+        #            if not year in dataset:
+        #                dataset[year] = value
+
+        return dataset
     def read_co2_free_allowances(self, delimiter = ";"):
         dataset = {}
         file_path = "sim4_freea_ger.csv"

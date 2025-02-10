@@ -17,6 +17,7 @@ class Company:
         self.co2_emission_idle  = 0.0
         self.co2_demand         = 0.0
         self.co2_intensity      = 0.0
+        self.co2_subvention     = 0.0
         self.co2_supply         = 0.0
         self.co2_taxes          = 0.0
 

@@ -9,11 +9,13 @@ class MarketCo2:
                  co2_emission_big_start,
                  co2_intensity_start,
                  co2_price_start,
+                 co2_subvention_start,
                  co2_supply_start,
                  delta_capital_nature_pi,
                  delta_co2_emission_pi,
                  delta_co2_intensity_pi,
                  delta_co2_price_pi,
+                 delta_co2_subvention_pi,
                  delta_free_allowance_pi,
                  delta_sale_allowance_pi,
                  free_allowances_start,
@@ -24,6 +26,7 @@ class MarketCo2:
         self.__delta_co2_emission_pi        = delta_co2_emission_pi
         self.__delta_co2_intensity_pi       = delta_co2_intensity_pi
         self.__delta_co2_price_pi           = delta_co2_price_pi
+        self.__delta_co2_subvention_pi      = delta_co2_subvention_pi
         self.__delta_capital_nature_pi      = delta_capital_nature_pi
         self.__delta_free_allowances_pi     = delta_free_allowance_pi
         self.__delta_sale_allowances_pi     = delta_sale_allowance_pi
@@ -35,8 +38,10 @@ class MarketCo2:
 
         self.co2_intensity      = co2_intensity_start
         self.co2_price          = co2_price_start
+        self.co2_subvention     = co2_subvention_start
         self.co2_supply         = co2_supply_start
         self.delta_co2_intensity = self.__sim_delta_co2_intensity()
+        self.delta_co2_subvention = self.__sim_delta_co2_subvention()
         self.delta_free_allowances = self.__sim_delta_free_allowances()
         self.delta_sale_allowances = self.__sim_co2_delta_sale_allowances()
 
@@ -59,6 +64,7 @@ class MarketCo2:
                 'co2_emission_big': float(self.co2_emission_big),
                 'co2_intensity': float(self.co2_intensity),
                 'co2_price': float(self.co2_price),
+                'co2_subvention':float(self.co2_subvention),
                 'co2_supply': float(self.co2_supply),
                 'free_allowances': float(self.free_allowances),
                 'invoice': self.invoice,
@@ -71,7 +77,7 @@ class MarketCo2:
         self.co2_balance = 0
         return
 
-    def sim_new_year_co2(self, company_list):#, delta_co2_intensity_last_year):
+    def sim_new_year_co2(self):#, delta_co2_intensity_last_year):
         # sim co2 intesity delta
 
         self.delta_co2_intensity = self.__sim_delta_co2_intensity()
@@ -89,29 +95,37 @@ class MarketCo2:
         if self.sale_allowances < 0:
             self.sale_allowances = 0
 
+        self.delta_co2_subvention = self.__sim_delta_co2_subvention()
+        self.co2_subvention +=self.delta_co2_subvention
+        if self.co2_subvention < 0:
+            self.co2_subvention = 0
+
 
         self.delta_capital_nature =  self.__sim_delta_capital_nature()
         self.total_capital_nature +=  self.delta_capital_nature
-        sum_cap_n = sum([company_list[index].capital_nature for index in company_list])
-        capital_nature_row = self.total_capital_nature - sum_cap_n
 
+        return self.total_capital_nature
 
-
-        return capital_nature_row
-
-    def sim_co2_market_situation_company(self, co2_intensity_last_year):
+    def sim_co2_intensity(self, co2_intensity_last_year):
         mu = self.delta_co2_intensity
         deviation = self.__assume['stdev_delta_co2_intensity']
         delta_co2_intensity = random.uniform(mu+deviation,mu-deviation)
         co2_intensity = delta_co2_intensity+co2_intensity_last_year
         return co2_intensity
+    def sim_co2_subvention(self, co2_subvention_last_year):
+        co2_subvention = co2_subvention_last_year
 
+
+        return co2_subvention
     def __sim_delta_capital_nature(self):
         sigma = stdev(self.__delta_capital_nature_pi)
         mu = mean(self.__delta_capital_nature_pi)
         delta_capital_nature = random.gauss(mu, sigma)
         return delta_capital_nature
-
+    def __sim_delta_co2_subvention(self):
+        delta_co2_subvention = random.choice(self.__delta_co2_subvention_pi)
+        self.__delta_co2_subvention_pi.append(delta_co2_subvention)
+        return delta_co2_subvention
     def __sim_delta_co2_intensity(self):
         delta_co2_intensity = random.gauss(mean(self.__delta_co2_intensity_pi),stdev(self.__delta_co2_intensity_pi))
         self.__delta_co2_intensity_pi.append(delta_co2_intensity)
@@ -137,23 +151,27 @@ class MarketCo2:
         co2_emission = co2_intensity*business_value
         co2_emission_idle = co2_emission*share_of_co2_idle
         co2_intensity = (co2_emission-co2_emission_idle)/business_value
-        return co2_emission, co2_intensity, co2_emission_idle
+        share_of_subvention = 0.2
+        co2_subvention = self.co2_subvention * share_of_subvention
+        return co2_emission, co2_intensity, co2_emission_idle, co2_subvention
 
     def calc_co2_market_situation_company(self, business_value,
                                           capital,
                                           co2_emission_idle,
-                                          co2_intensity,
+                                          co2_intensity_last_year,
+                                          co2_subvention_last_year,
                                           weight_nature):
-
+        ##ASSUMPTION, calculation required
+        co2_intensity = self.sim_co2_intensity(co2_intensity_last_year)
         co2_emission = co2_intensity * business_value + co2_emission_idle
-        capital_nature = capital * weight_nature
+        delta_co2_subvention_share = self.delta_co2_subvention / self.co2_subvention
+        co2_subvention = co2_subvention_last_year * (1 + delta_co2_subvention_share)
+        capital_nature = capital * weight_nature + co2_subvention
 
 
-        #co2_supply = 0
-        #co2_demand = co2_emission - co2_supply
 
         co2_apply_free = co2_emission
-        return capital_nature, co2_apply_free, co2_emission#, co2_supply
+        return co2_intensity, capital_nature, co2_apply_free, co2_emission
 
     def calc_cross_sectoral_correction_factor(self, co2_free_apply):
         if co2_free_apply == 0:
@@ -354,6 +372,8 @@ class MarketCo2:
         self.journal[logId]['co2_emission_big'] = float(self.co2_emission_big)
         self.journal[logId]['co2_intensity'] = float(self.co2_intensity)
         self.journal[logId]['co2_price'] = float(self.co2_price)
+        self.journal[logId]['co2_subvention'] = float(self.co2_subvention)
+        self.journal[logId]['co2_supply'] = float(self.co2_supply)
         self.journal[logId]['free_allowances'] = float(self.free_allowances)
         self.journal[logId]['invoice'] = self.invoice
         self.journal[logId]['sale_allowances'] = float(self.sale_allowances)
@@ -367,6 +387,7 @@ class MarketCo2:
             'co2_intensity' : float(self.co2_intensity),
             'co2_price': float(self.co2_price),
             'co2_supply': float(self.co2_supply),
+            'co2_subvention':float(self.co2_subvention),
             'free_allowances': float(self.free_allowances),
             'invoice': self.invoice,
             'sale_allowances': float(self.sale_allowances),

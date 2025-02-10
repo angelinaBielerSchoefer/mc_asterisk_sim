@@ -54,6 +54,7 @@ class MonteCarloMarket:
                          data_co2_free_allowances_value,
                          data_co2_price_year_value,
                          data_co2_sold_allowances_value,
+                         data_co2_subvention_value,
                          data_emissions_year_value,
                          data_gdp_year_value,
                          data_investment_by_category_year_value,
@@ -76,17 +77,19 @@ class MonteCarloMarket:
         mc_result['data']['gdp'] = data_gdp_year_value # in million euro
         mc_result['data']['free_allowances'] = data_co2_free_allowances_value #metric tone
         mc_result['data']['sold_allowances'] = data_co2_sold_allowances_value #metric tone
+        mc_result['data']['co2_subvention'] = data_co2_subvention_value #metric tone
         mc_result['data']['state_of_atmosphere'] = data_atmosphere_year_value # 420ppm in 2022
         mc_result['data']['total_assets'] = data_total_assets_year_value #unit??
 
 
         print("----- Execution of Data calculation-----")
+
         mc_result['data'] = self.__prerun_data_input(mc_result['data'])
         self.mc_data = mc_result['data']
         print("----- Execution of Scenario 1 -----")
-
         if self.parallel:
             print("Implementation ongoing")
+
             mc_result['sc1'] = self.__run_simulation_competitive_pricing_parallel()
         else:
             print("skipped")
@@ -385,6 +388,7 @@ class MonteCarloMarket:
         data_collection['delta_co2_emission']   = {}
         data_collection['delta_co2_intensity']  = {}
         data_collection['delta_co2_price']      = {}
+        data_collection['delta_co2_subvention'] = {}
         data_collection['delta_free_allowances'] = {}
         data_collection['delta_sale_allowances'] = {}
         data_collection['delta_gdp']            = {}
@@ -413,6 +417,8 @@ class MonteCarloMarket:
                 data_collection['co2_price'][cnt_y] =[data_collection['co2_price'][cnt_y]]
             if cnt_y in data_collection['co2_price'] and (cnt_y-1) in data_collection['co2_price']:
                 data_collection['delta_co2_price'][cnt_y] = [data_collection['co2_price'][cnt_y][-1] - data_collection['co2_price'][cnt_y-1][-1]]
+            if cnt_y in data_collection['co2_subvention'] and (cnt_y-1) in data_collection['co2_subvention']:
+                data_collection['delta_co2_subvention'][cnt_y] = [data_collection['co2_subvention'][cnt_y] - data_collection['co2_subvention'][cnt_y-1]]
             if cnt_y in data_collection['free_allowances'] and (cnt_y-1) in data_collection['free_allowances']:
                 data_collection['delta_free_allowances'][cnt_y] = [data_collection['free_allowances'][cnt_y] - data_collection['free_allowances'][cnt_y-1]]
             if cnt_y in data_collection['sold_allowances'] and (cnt_y-1) in data_collection['sold_allowances']:
@@ -495,6 +501,7 @@ class MonteCarloMarket:
         data_collection['delta_co2_emission_pi']        = self.create_sim_base(data_collection['delta_co2_emission'])
         data_collection['delta_co2_intensity_pi']       = self.create_sim_base(data_collection['delta_co2_intensity'])
         data_collection['delta_co2_price_pi']           = self.create_sim_base(data_collection['delta_co2_price'])
+        data_collection['delta_co2_subvention_pi']      = self.create_sim_base(data_collection['delta_co2_subvention'])
         data_collection['delta_free_allowances_pi']      = self.create_sim_base(data_collection['delta_free_allowances'])
         data_collection['delta_sale_allowances_pi']      = self.create_sim_base(data_collection['delta_sale_allowances'])
         #
@@ -560,12 +567,14 @@ class MonteCarloMarket:
                             co2_emission_total_start,
                             co2_intensity_start,
                             co2_price_start,
+                            co2_subvention_start,
                             co2_supply_start,
                             company_list,
                             delta_capital_nature_pi,
                             delta_co2_emission_pi,
                             delta_co2_intensity_pi,
                             delta_co2_price_pi,
+                            delta_co2_subvention_pi,
                             delta_free_allowances_pi,
                             delta_sale_allowances_pi,
                             free_allowances_start,
@@ -579,11 +588,13 @@ class MonteCarloMarket:
                                co2_emission_big_start,
                                co2_intensity_start,
                                co2_price_start,
+                               co2_subvention_start,
                                co2_supply_start,
                                delta_capital_nature_pi,
                                delta_co2_emission_pi,
                                delta_co2_intensity_pi,
                                delta_co2_price_pi,
+                               delta_co2_subvention_pi,
                                delta_free_allowances_pi,
                                delta_sale_allowances_pi,
                                free_allowances_start,
@@ -591,10 +602,11 @@ class MonteCarloMarket:
 
         rest_of_the_world.co2_emission = co2_emission_total_start - co2_emission_big_start
         rest_of_the_world.co2_intensity = co2_market.co2_intensity
+
         for index in company_list:
             company = company_list[index]
             ## calc start value for intensity and co2_emissions
-            company.co2_emission, company.co2_intensity, company.co2_emission_idle = co2_market.calc_company_start_situation(company.business_value,
+            company.co2_emission, company.co2_intensity, company.co2_emission_idle, company.co2_subvention = co2_market.calc_company_start_situation(company.business_value,
                                                                                                                              share_of_idle)
         return co2_market
 
@@ -628,6 +640,7 @@ class MonteCarloMarket:
     def simulate_one_trial_of_market_competitive(self, trials_id):
         progress_counter = 0
         target_year = 2030
+        dead_list = {}
         company_list, general_market = self.__create_general_market(
             self.mc_data['business_power_pi'],
             self.mc_data['share_of_gdp'][self.start_year][-1],
@@ -643,12 +656,14 @@ class MonteCarloMarket:
                                                 self.mc_data['co2_emission'][self.start_year],
                                                 self.mc_data['co2_intensity'][self.start_year],
                                                 self.mc_data['co2_price'][self.start_year][-1],
+                                                self.mc_data['co2_subvention'][self.start_year],
                                                 30000,
                                                 company_list,
                                                 self.mc_data['delta_capital_nature_pi'],
                                                 self.mc_data['delta_co2_emission_pi'],
                                                 self.mc_data['delta_co2_intensity_pi'],
                                                 self.mc_data['delta_co2_price_pi'],
+                                                self.mc_data['delta_co2_subvention_pi'],
                                                 self.mc_data['delta_free_allowances_pi'],
                                                 self.mc_data['delta_sale_allowances_pi'],
                                                 self.mc_data['free_allowances'][self.start_year],
@@ -665,11 +680,8 @@ class MonteCarloMarket:
             progress_counter +=1
             self.__simulate_one_year_of_market_competitive(company_list, co2_market, general_market, year)
 
-
             #############################grant free allowances##############################################
             self.__authorize_free_allowances(co2_market,company_list)
-
-            #############################Reduce demand/increase nature capital by subventions##################################
 
             #############################Sale Allowances##############################################
             self.__trade_allowances(co2_market, company_list)
@@ -680,7 +692,7 @@ class MonteCarloMarket:
             #############################taxes##############################################
             self.__collect_taxes()
             company_list = {index:company_list[index] for index in company_list if company_list[index].is_alive}
-
+            dead_list = {index:company_list[index] for index in company_list if not company_list[index].is_alive}
             ### for progress check on long runs
             if progress_counter % 10 == 0:
                 total = (target_year-self.start_year)
@@ -688,8 +700,10 @@ class MonteCarloMarket:
 
             year += 1
         mc_result={
+
             'company_list'  : company_list,
             'co2_market'    : co2_market,
+            'dead_list'     : dead_list,
             'general_market': general_market
         }
         return mc_result
@@ -699,16 +713,16 @@ class MonteCarloMarket:
         ###1. Sim general market
         general_market.count_company = len(company_list)
         general_market.sim_new_year()
-        capital_nature_row = co2_market.sim_new_year_co2(company_list)
-        general_market.rest_of_the_world.capital_nature = capital_nature_row
-        #with ProcessPoolExecutor() as executor:
-        #    tuple = [(self, company, general_market) for company in company_list]
-        #    executor.map(lambda args: self.company_run_market(*args), tuple)
+
+        total_capital_nature = co2_market.sim_new_year_co2()
+        sum_cap_n = sum([company_list[index].capital_nature for index in company_list])
+        general_market.rest_of_the_world.capital_nature = total_capital_nature - sum_cap_n
+
         self.__run_company_market(general_market.rest_of_the_world,general_market)
         gdp = general_market.rest_of_the_world.business_value
-        total_capital = general_market.rest_of_the_world.capital
-        big_co2 = 0
-        capital_nature = general_market.rest_of_the_world.capital_nature
+        cnt_total_capital = general_market.rest_of_the_world.capital
+        cnt_big_co2 = 0
+        cnt_capital_nature = general_market.rest_of_the_world.capital_nature
         for index in company_list:
             company=company_list[index]
             self.__run_company_market(company,general_market)
@@ -716,28 +730,29 @@ class MonteCarloMarket:
             company.log_to_journal(year)
 
             gdp += company.business_value
-            total_capital += company.capital
-            big_co2 += company.co2_emission #in  mio metric tons
-            capital_nature+=company.weight_nature
+            cnt_total_capital += company.capital
+            cnt_big_co2 += company.co2_emission #in  mio metric tons
+            cnt_capital_nature+=company.weight_nature
 
 
-        total_co2 = general_market.rest_of_the_world.co2_emission + big_co2
+        total_co2 = general_market.rest_of_the_world.co2_emission + cnt_big_co2
 
         ###4. calc general market
-        general_market.total_assets = total_capital
+        general_market.total_assets = cnt_total_capital
         general_market.gdp = gdp
 
 
         general_market.co2_emission_total = total_co2
         ###5. calc co2 market
-        co2_market.co2_emission_big = big_co2
-        co2_market.total_capital_nature = capital_nature
+        co2_market.co2_emission_big = cnt_big_co2
+        co2_market.total_capital_nature = cnt_capital_nature
 
         ## log all infos
         co2_market.log_to_journal(year)
         general_market.log_to_journal(year)
         return
-
+    def __compensate_co2_sc1(self, company_list):
+        return
     def __authorize_free_allowances(self, co2_market, company_list):
         total_co2_free_apply = sum([company_list[index].co2_apply_free for index in company_list])
         cscf = co2_market.calc_cross_sectoral_correction_factor(total_co2_free_apply)
@@ -794,16 +809,13 @@ class MonteCarloMarket:
         business_value = company.business_value
         capital = company.capital
         co2_intensity_last_year = company.co2_intensity
-        co2_emission_ly = company.co2_emission
-        weight_nature_last_year = company.weight_nature
-        ###2. sim general_market conditions for this single company
-        company.co2_intensity = co2_market.sim_co2_market_situation_company(co2_intensity_last_year)
-        ###3. calc company status related to general market conditions
-        company.capital_nature, company.co2_apply_free, company.co2_emission= co2_market.calc_co2_market_situation_company(
+        co2_subvention_last_year = company.co2_subvention
+        company.co2_intensity,company.capital_nature, company.co2_apply_free, company.co2_emission= co2_market.calc_co2_market_situation_company(
             business_value,
             capital,
             company.co2_emission_idle,
-            company.co2_intensity,
+            co2_intensity_last_year,
+            co2_subvention_last_year,
             company.weight_nature)
 
     def __run_company_market(self, company, general_market):
