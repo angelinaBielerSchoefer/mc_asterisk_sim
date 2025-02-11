@@ -41,7 +41,7 @@ def parse_arguments():
     parser.add_argument("--RemainingMinutes", default="360")
     parser.add_argument("--RemainingStoryPoints", default="10")
 
-    parser.add_argument("--Trials", default="100")
+    parser.add_argument("--Trials", default="1")
     parser.add_argument("--NumComp", default="500")
     parser.add_argument("--Run", default="parallel")
 

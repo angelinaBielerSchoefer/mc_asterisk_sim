@@ -13,6 +13,7 @@ class Company:
         self.weight_nature =  weight_nature
 
         self.co2_apply_free     = 0.0
+        self.co2_consumption    = 0.0
         self.co2_emission       = 0.0
         self.co2_emission_idle  = 0.0
         self.co2_demand         = 0.0
@@ -20,6 +21,9 @@ class Company:
         self.co2_subvention     = 0.0
         self.co2_supply         = 0.0
         self.co2_taxes          = 0.0
+
+        self.market_influence_nature = 0.0
+        self.nature_power = 0.0
 
         #ASSUMPTION!!!!!
         random_taxable = random.randrange(0,1)
@@ -31,12 +35,13 @@ class Company:
         self.business_power = 0.0
         self.market_influence = 0.0
         self.is_alive = True
-        #self.invoice = {
-        #    'free' : [(0,0)],
-        #    'sale' : [(0,0)],
-        #    'vcm'  : [(0,0)],
-        #    'tax'  : [(0,0)]
-        #}
+
+        self.budget_to_improve =   ( 0.0, #business_power
+                                     0.0, #nature_power
+                                     0.0, #co2_emission_idle
+                                     0.0, #apply_free
+                                     0.0) #buy_allowances
+
         self.journal={
             -1: {
                 'business_value': float(self.business_value),

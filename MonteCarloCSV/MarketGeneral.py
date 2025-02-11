@@ -82,6 +82,9 @@ class MarketGeneral:
 
         weight_nature = random.gauss(mu, sigma)
         self.count_company = num_companies
+
+
+
         return  business_value, capital, weight_nature
 
     def sim_start_rest_of_the_world(self, company_list):
@@ -93,7 +96,7 @@ class MarketGeneral:
         self.rest_of_the_world = Company(bv_row,cap_row,investment_of_nature)
         return self.rest_of_the_world
 
-    def sim_general_market_situation_company(self, company):
+    def sim_company_situation(self, company):
         ### simulated factors bp, mi
         ### random distributed with assumed deviation
         mu = self.business_power
@@ -107,10 +110,10 @@ class MarketGeneral:
         #market_influence = random.uniform(mu-deviation, mu+deviation)
 
 
-        is_alive = self.__check_if_survived(company)
+        is_alive = self.check_company_if_survived(company)
 
         return business_power, is_alive, market_influence
-    def __check_if_survived(self, company):
+    def check_company_if_survived(self, company):
         year = max(company.journal.keys())
         death_counter = 0
         while year in company.journal:
@@ -138,28 +141,44 @@ class MarketGeneral:
 
 
 
-
-    def calc_general_situation_company(self,
-                                      business_power_last_year,
-                                      business_value_last_year,
-                                      capital_last_year,
-                                      market_influence,
-                                      weight_nature
-                                      ):
+    def calc_company_capital(self,
+                             business_power_last_year,
+                             business_value_last_year,
+                             capital_last_year):
         delta_capital = (business_value_last_year * business_power_last_year)
         capital =  delta_capital + capital_last_year
+        return capital, delta_capital
 
-        weight_nature = 0
-        weight_business = 1 - weight_nature
-        capital_business = capital * weight_business
-        capital_nature = capital * weight_nature
-
+    def calc_company_business_value(self, business_value_last_year,
+                                    capital_business,
+                                    market_influence):
 
         delta_business_value = capital_business * market_influence
         business_value = business_value_last_year + delta_business_value
 
-        return business_value, capital, capital_business, capital_nature, delta_capital, delta_business_value
+        return business_value, delta_business_value
+    #def calc_company_situation
+    def calc_row_situation(self):
+        business_value_last_year = self.rest_of_the_world.business_value
+        market_influence = self.rest_of_the_world.market_influence
+        (self.rest_of_the_world.capital,
+         self.rest_of_the_world.delta_capital) = self.calc_company_capital(self.rest_of_the_world.business_power,
+                                                                           self.rest_of_the_world.business_value,
+                                                                           self.rest_of_the_world.capital)
 
+        (self.rest_of_the_world.business_value,
+         self.rest_of_the_world.delta_business_value) = self.calc_company_business_value(self.rest_of_the_world.business_value,
+                                                                                         self.rest_of_the_world.capital,
+                                                                                         self.rest_of_the_world.market_influence)
+        return
+
+    def company_option_improve_business_power(self, budget, company):
+
+        #### ASSUMPTION!!!
+        #set bp
+        company.business_power += 0.1
+        #increase co2_influence
+        company.co2_intensity += 0.1
 
     def __get_sales_volume_category(self,capital):
         #capital in Mrd Euro
