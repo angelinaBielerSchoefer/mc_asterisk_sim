@@ -7,46 +7,41 @@ class MarketGeneral:
     def __init__(self, assume,
                  business_power_pi,
                  start_business_value_share,
+                 start_capital_business,
+                 start_capital_total,
                  start_capital_share,
                  start_co2_emission_total,
                  co2_investment_share_pi,
-                 gdp_start,
-                 investment_by_category,
-                 market_condition_pi,
-                 start_year,
-                 total_assets_start):
-        self.__market_condition_pi = market_condition_pi
+                 start_gdp,
+                 market_condition_pi
+                 ):
+        self.__assume = assume
         self.__business_power_pi = business_power_pi
         self.__co2_investment_share_pi =co2_investment_share_pi
-        self.__assume = assume
-        self.rest_of_the_world = None
+        self.__market_condition_pi = market_condition_pi
 
         self.__set_business_power_global()
         self.__set_market_condition_global()
 
-        self.gdp = gdp_start
-        self.count_company = 0
-        self.co2_emission_total = start_co2_emission_total
         self.start_business_value_share = start_business_value_share
         self.start_capital_share = start_capital_share
-        self.total_assets = total_assets_start
 
-        investment = {}
-        for category, data in investment_by_category.items():
-            if start_year in data:
-                investment[category] = data[start_year]
-            else:
-                print("no start value for sales volume category {0} found.".format(category))
-        self.investment_by_category = investment
+        self.co2_emission_total = start_co2_emission_total
+        self.count_company = 0
+        self.gdp = start_gdp
+        self.rest_of_the_world = None
+        self.capital_total = start_capital_total
+        self.capital_business = start_capital_business
 
         self.journal={
             -1: {
-                'business_power': float(self.business_power),
+                'business_power'    : float(self.business_power),
+                'capital_total'     : float(self.capital_total),
+                'capital_business'  : float(self.capital_business),
                 'co2_emission_total': float(self.co2_emission_total),
-                'count_company': int(self.count_company),
-                'gdp': float(self.gdp),
-                'market_condition': float(self.market_condition),
-                'total_assets': float(self.total_assets),
+                'count_company'     : int(self.count_company),
+                'gdp'               : float(self.gdp),
+                'market_condition'  : float(self.market_condition),
             }
         }
     def __set_business_power_global(self):
@@ -70,28 +65,27 @@ class MarketGeneral:
         mu = self.gdp * self.start_business_value_share / num_companies
         sigma = self.__assume['stdev_start_value']/num_companies
         business_value = random.gauss(mu, sigma)
-        mu = self.total_assets * self.start_capital_share / num_companies
+        mu = self.capital_business * self.start_capital_share / num_companies
         sigma = self.__assume['stdev_start_assets']
         capital = random.gauss(mu, sigma)
-        capital_business = capital
-        #category_of_capital = self.__get_sales_volume_category(capital)
-        mu = mean(self.__co2_investment_share_pi) #self.investment_by_category[category_of_capital]
 
-        #sigma = self.__assume['stdev_start_invest']
+        mu = mean(self.__co2_investment_share_pi)
         sigma = stdev(self.__co2_investment_share_pi)
 
         weight_nature = random.gauss(mu, sigma)
+        capital_nature = weight_nature*capital
+
         self.count_company = num_companies
 
 
 
-        return  business_value, capital, weight_nature
+        return  business_value, capital, capital_nature
 
     def sim_start_rest_of_the_world(self, company_list):
         sum_bv = sum([company_list[index].business_value for index in company_list])
         bv_row = self.gdp - sum_bv
         sum_cap = sum([company_list[index].capital for index in company_list])
-        cap_row = self.total_assets - sum_cap
+        cap_row = self.capital_business - sum_cap
         investment_of_nature = 0 ##todo: calculate, set oder simulate??
         self.rest_of_the_world = Company(bv_row,cap_row,investment_of_nature)
         return self.rest_of_the_world
@@ -127,16 +121,16 @@ class MarketGeneral:
 
         return company.is_alive
 
-    def calc_total_assets(self, company_list):
+    def calc_capital_business(self, company_list):
 
-        total_assets = 0
+        capital_business = 0
         for index in company_list:
             company = company_list[index]
 
             if company.is_alive:
-                total_assets += company.capital
-        self.total_assets = total_assets + self.rest_of_the_world.capital
-        return self.total_assets
+                capital_business += company.capital
+        self.capital_business = capital_business + self.rest_of_the_world.capital
+        return self.capital_business
 
 
 
@@ -201,19 +195,22 @@ class MarketGeneral:
     def log_to_journal(self, logId):
         self.journal[logId] = {}
         self.journal[logId]['business_power'] = float(self.business_power)
+        self.journal[logId]['capital_business'] = float(self.capital_business)
+        self.journal[logId]['capital_total'] = float(self.capital_total)
         self.journal[logId]['co2_emission_total'] = float(self.co2_emission_total)
         self.journal[logId]['count_company'] = int(self.count_company)
         self.journal[logId]['gdp'] = float(self.gdp)
         self.journal[logId]['market_condition'] = float(self.market_condition)
-        self.journal[logId]['total_assets'] = float(self.total_assets)
         return self.journal
 
     def to_dict(self):
         return {
             'business_power': float(self.business_power),
+            'capital_total': float(self.capital_total),
+            'capital_business': float(self.capital_business),
             'co2_emission_total': float(self.co2_emission_total),
             'count_company': int(self.count_company),
             'gdp': float(self.gdp),
             'market_condition': float(self.market_condition),
-            'total_assets': float(self.total_assets),
+
         }

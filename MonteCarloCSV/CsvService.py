@@ -150,7 +150,25 @@ class CsvService:
                         dataset[year] = value
 
         return dataset
+    def read_carbon_credits_list(self, delimiter = ";"):
+        dataset = {}
+        file_path = "sim4_cc.csv"
+        print("Loading Items from CSV File: '{0}'.".format(file_path))
+        with open(file_path, "r") as file:
+            # Iteriere durch jede Zeile der Datei
+            for row in file:
+                # Entferne führende und abschließende Leerzeichen (z. B. '\n')
+                row = row.strip()
+                # Überspringe Zeilen, die mit '#' beginnen
+                if not row.startswith("#"):
+                    data = row.split(delimiter)
+                    year = int(data[1])
+                    value = float(data[4]) #read values in mio metric ton
+                    if not year in dataset:
+                        dataset[year] = value
 
+        return dataset
+        return {}
     def read_ger_capbig_list(self, delimiter = ";"):
         dataset = {}
         file_path = "sim4_ums_big_ger.csv"
@@ -351,7 +369,7 @@ class CsvService:
                 if not row.startswith("#"):
                     data = row.split(delimiter)
                     year = int(data[1])
-                    value = float(data[5]) / 1000000# metric tone of CO?-eq recalc to mio metric tone
+                    value = float(data[5]) / 1000000# metric tone of CO2-eq recalc to mio metric tone
                     if not year in dataset:
                         dataset[year] = value
 
