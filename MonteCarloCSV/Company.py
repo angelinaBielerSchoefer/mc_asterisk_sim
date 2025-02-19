@@ -4,14 +4,17 @@ import random
 class Company:
     def __init__(self, business_value_start,
                  capital_start,
-                 capital_nature_start):
+                 capital_nature_start,
+                 delta_business_value_start = 0):
         self.business_value     = business_value_start
+        self.delta_business_value= delta_business_value_start
         self.capital            = capital_start  # mrd euro
         self.capital_nature     = capital_nature_start
-        self.weight_nature      = self.capital_nature/self.capital
-        self.capital_business   = self.capital-self.capital_nature
-        self.weight_business    = 1 - self.weight_nature
 
+        #self.weight_nature      = self.capital_nature/self.capital
+        self.capital_business   = self.capital-self.capital_nature
+        #self.weight_business    = 1 - self.weight_nature
+        self.saldo_nature       = 0.0
 
         self.co2_apply_free     = 0.0
         self.co2_consumption    = 0.0
@@ -19,6 +22,7 @@ class Company:
         self.co2_emission_idle  = 0.0
         self.co2_demand         = 0.0
         self.co2_intensity      = 0.0
+        self.co2_correlation_factor = 0.0
         self.co2_remaining_stock= 0.0
         self.co2_subvention     = 0.0
         self.co2_supply         = 0.0
@@ -50,7 +54,6 @@ class Company:
             -1: {
                 'business_value': float(self.business_value),
                 'capital': float(self.capital),
-        #        'invoice':self.invoice
             }
         }
 

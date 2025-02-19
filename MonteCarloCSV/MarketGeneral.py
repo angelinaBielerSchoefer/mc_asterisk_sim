@@ -10,7 +10,9 @@ class MarketGeneral:
                  start_capital_business,
                  start_capital_total,
                  start_capital_share,
-                 start_co2_emission_total,
+                 delta_co2_emission_global_pi,
+                 start_co2_emission_global,
+                 start_delta_gdp,
                  co2_investment_share_pi,
                  start_gdp,
                  market_condition_pi
@@ -19,6 +21,7 @@ class MarketGeneral:
         self.__business_power_pi = business_power_pi
         self.__co2_investment_share_pi =co2_investment_share_pi
         self.__market_condition_pi = market_condition_pi
+        self.__delta_co2_emission_global_pi = delta_co2_emission_global_pi
 
         self.__set_business_power_global()
         self.__set_market_condition_global()
@@ -26,9 +29,10 @@ class MarketGeneral:
         self.start_business_value_share = start_business_value_share
         self.start_capital_share = start_capital_share
 
-        self.co2_emission_total = start_co2_emission_total
+        self.co2_emission_global = start_co2_emission_global
         self.count_company = 0
         self.gdp = start_gdp
+        self.start_delta_gdp = start_delta_gdp
         self.rest_of_the_world = None
         self.capital_total = start_capital_total
         self.capital_business = start_capital_business
@@ -38,7 +42,7 @@ class MarketGeneral:
                 'business_power'    : float(self.business_power),
                 'capital_total'     : float(self.capital_total),
                 'capital_business'  : float(self.capital_business),
-                'co2_emission_total': float(self.co2_emission_total),
+                'co2_emission_global': float(self.co2_emission_global),
                 'count_company'     : int(self.count_company),
                 'gdp'               : float(self.gdp),
                 'market_condition'  : float(self.market_condition),
@@ -53,10 +57,15 @@ class MarketGeneral:
         self.market_condition = random.gauss(mean(self.__market_condition_pi),stdev(self.__market_condition_pi))#random.choice(self.__market_condition_pi)#self.__global_mc_history[year]
         self.__market_condition_pi.append(self.market_condition)
         return
-
+    def __set_emission_global(self):
+        delta_co2_emission_global = random.gauss(mean(self.__delta_co2_emission_global_pi),stdev(self.__delta_co2_emission_global_pi))#random.choice(self.__market_condition_pi)#self.__global_mc_history[year]
+        self.__delta_co2_emission_global_pi.append(delta_co2_emission_global)
+        self.co2_emission_global +=delta_co2_emission_global
+        return
     def sim_new_year(self):
         self.__set_business_power_global()
         self.__set_market_condition_global()
+        self.__set_emission_global()
         return self
 
     def sim_start_of_company(self, num_companies):
@@ -65,6 +74,12 @@ class MarketGeneral:
         mu = self.gdp * self.start_business_value_share / num_companies
         sigma = self.__assume['stdev_start_value']/num_companies
         business_value = random.gauss(mu, sigma)
+
+        mu = self.start_delta_gdp * self.start_business_value_share / num_companies
+        sigma = 0.1 * mu
+        delta_business_value = random.gauss(mu, sigma)
+
+
         mu = self.capital_business * self.start_capital_share / num_companies
         sigma = self.__assume['stdev_start_assets']
         capital = random.gauss(mu, sigma)
@@ -79,7 +94,7 @@ class MarketGeneral:
 
 
 
-        return  business_value, capital, capital_nature
+        return  business_value, capital, capital_nature, delta_business_value
 
     def sim_start_rest_of_the_world(self, company_list):
         sum_bv = sum([company_list[index].business_value for index in company_list])
@@ -154,14 +169,19 @@ class MarketGeneral:
     #def calc_company_situation
     def calc_row_situation(self):
         business_value_last_year = self.rest_of_the_world.business_value
-        market_influence = self.rest_of_the_world.market_influence
+        capital_last_year = self.rest_of_the_world.capital
+        business_power_last_year = self.rest_of_the_world.business_power
+
         (self.rest_of_the_world.capital,
-         self.rest_of_the_world.delta_capital) = self.calc_company_capital(self.rest_of_the_world.business_power,
-                                                                           self.rest_of_the_world.business_value,
-                                                                           self.rest_of_the_world.capital)
+         self.rest_of_the_world.delta_capital) = self.calc_company_capital(business_power_last_year,
+                                                                           business_value_last_year,
+                                                                           capital_last_year)
+
+        self.rest_of_the_world.capital_business = self.rest_of_the_world.capital
+        self.rest_of_the_world.capital_nature = 0
 
         (self.rest_of_the_world.business_value,
-         self.rest_of_the_world.delta_business_value) = self.calc_company_business_value(self.rest_of_the_world.business_value,
+         self.rest_of_the_world.delta_business_value) = self.calc_company_business_value(business_value_last_year,
                                                                                          self.rest_of_the_world.capital,
                                                                                          self.rest_of_the_world.market_influence)
         return
@@ -197,7 +217,7 @@ class MarketGeneral:
         self.journal[logId]['business_power'] = float(self.business_power)
         self.journal[logId]['capital_business'] = float(self.capital_business)
         self.journal[logId]['capital_total'] = float(self.capital_total)
-        self.journal[logId]['co2_emission_total'] = float(self.co2_emission_total)
+        self.journal[logId]['co2_emission_global'] = float(self.co2_emission_global)
         self.journal[logId]['count_company'] = int(self.count_company)
         self.journal[logId]['gdp'] = float(self.gdp)
         self.journal[logId]['market_condition'] = float(self.market_condition)
@@ -208,7 +228,7 @@ class MarketGeneral:
             'business_power': float(self.business_power),
             'capital_total': float(self.capital_total),
             'capital_business': float(self.capital_business),
-            'co2_emission_total': float(self.co2_emission_total),
+            'co2_emission_global': float(self.co2_emission_global),
             'count_company': int(self.count_company),
             'gdp': float(self.gdp),
             'market_condition': float(self.market_condition),

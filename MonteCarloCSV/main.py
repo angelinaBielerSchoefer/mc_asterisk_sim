@@ -115,6 +115,9 @@ def get_atmospheric_state_year_value(csv_service):
 def get_ger_co2_emissions_year_value(csv_service):
     datasets = csv_service.read_ger_co2_emissions()
     return datasets
+def get_global_co2_emissions_year_value(csv_service):
+    datasets = csv_service.read_global_co2_emissions()
+    return datasets
 def get_co2_emissions_year_value(csv_service):
     datasets = csv_service.read_co2_emissions()
     return datasets
@@ -132,6 +135,12 @@ def get_co2_price_year_value(csv_service):
     return dataset
 def get_co2_price_euets_year_value(csv_service):
     dataset = csv_service.read_co2_prices_euets()
+    return dataset
+def get_price_credits_year_value(csv_service):
+    dataset = csv_service.read_price_credits()
+    return dataset
+def get_price_allowances_year_value(csv_service):
+    dataset = csv_service.read_price_allowances()
     return dataset
 def get_investment_compcat_year_value(csv_service):
     dataset = csv_service.read_investmen_by_categorie()
@@ -272,6 +281,7 @@ def main():
                     'stdev_market_influence': float(0.018),#0.018 stdev of marketconditions over the years
                     'stdev_start_assets': float(2.9),##2,9 stdev of data total assets over the years
                     'stdev_start_invest': float(1.0),
+                    'stdev_start_co2_emission': float(2),#random set
                     'stdev_start_co2_intensity': float(0.10),#random set
                     'stdev_start_value': float(666), ##666 stdev of data gdp over the years
                 }
@@ -420,9 +430,12 @@ def main():
                 data_emissions_year_value = get_ger_co2_emissions_year_value(csv_service)
                 data_investment_by_category_year_value = get_investment_compcat_year_value(csv_service)
                 data_co2_price_year_value = get_co2_price_euets_year_value(csv_service)
+                data_co2_emission_global_year_value = get_global_co2_emissions_year_value(csv_service)
                 data_co2_free_allowances_value = get_co2_free_allowances_value(csv_service)
                 data_co2_sold_allowances_value = get_co2_sold_allowances_value(csv_service)
                 data_co2_subvention_value = get_co2_subvention_value(csv_service)
+                data_price_allowances_year_value = get_price_allowances_year_value(csv_service)
+                data_price_credit_year_value = get_price_credits_year_value(csv_service)
 
         #### SIMULATION execution
 
@@ -510,17 +523,18 @@ def main():
                                                                          data_bvbig_year_value,
                                                                          data_capbig_year_value,
                                                                          data_carbon_credits_year_value,
+                                                                         data_co2_emission_global_year_value,
                                                                          data_co2_free_allowances_value,
-                                                                         data_co2_price_year_value,
                                                                          data_co2_sold_allowances_value,
                                                                          data_co2_subvention_value,
                                                                          data_emissions_year_value,
                                                                          data_gdp_year_value,
                                                                          data_investment_by_category_year_value,
+                                                                         data_price_allowances_year_value,
+                                                                         data_price_credit_year_value,
                                                                          data_total_assets_year_value,
                                                                          pb_name,
                                                                          )
-
         #### intern_sim0_printResults():
         print()
         print("================================================================")

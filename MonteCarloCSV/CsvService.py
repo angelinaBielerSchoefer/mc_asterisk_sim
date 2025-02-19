@@ -262,6 +262,25 @@ class CsvService:
 
         return dataset
 
+    def read_global_co2_emissions(self, delimiter = ";"):
+        dataset = {}
+        file_path = "sim4_co2em_glo.csv"
+        print("Loading Items from CSV File: '{0}'.".format(file_path))
+        with open(file_path, "r") as file:
+            # Iteriere durch jede Zeile der Datei
+            for row in file:
+                # Entferne führende und abschließende Leerzeichen (z. B. '\n')
+                row = row.strip()
+                # Überspringe Zeilen, die mit '#' beginnen
+                if not row.startswith("#"):
+                    data = row.split(delimiter)
+                    year = int(data[1])
+                    value = float(data[2])* 1000# billion metric tone of CO?-eq recalc to mio metric tone
+                    if not year in dataset:
+                        dataset[year] = value
+
+        return dataset
+
     def read_co2_emissions(self, delimiter = ";"):
         dataset = {}
         file_path = "sim3_co2em.csv"
@@ -297,6 +316,47 @@ class CsvService:
                     if not year in dataset:
                         dataset[year] = value
 
+        return dataset
+    def read_price_allowances(self,  delimiter = ";"):
+        dataset = {}
+        file_path = "sim3_co2p.csv"
+        print("Loading Items from CSV File: '{0}'.".format(file_path))
+        with open(file_path, "r") as file:
+            # Iteriere durch jede Zeile der Datei
+            for row in file:
+                # Entferne führende und abschließende Leerzeichen (z. B. '\n')
+                row = row.strip()
+                # Überspringe Zeilen, die mit '#' beginnen
+                if not row.startswith("#"):
+                    data = row.split(delimiter)
+                    year = int(data[1])
+                    value = float(data[2]) / 1000
+                    #U.S. dollars per metric ton of CO₂
+                    #recalc mrd Euro per mio metric ton
+
+                    if not year in dataset:
+                        dataset[year] = value
+        return dataset
+    def read_price_credits(self,  delimiter = ";"):
+        dataset = {}
+        file_path = "sim4_ccp.csv"
+        print("Loading Items from CSV File: '{0}'.".format(file_path))
+        with open(file_path, "r") as file:
+            # Iteriere durch jede Zeile der Datei
+            for row in file:
+                # Entferne führende und abschließende Leerzeichen (z. B. '\n')
+                row = row.strip()
+                # Überspringe Zeilen, die mit '#' beginnen
+                if not row.startswith("#"):
+                    data = row.split(delimiter)
+                    year = int(data[0])
+                    value = float(data[1]) / 1000 * 0.91
+                    #U.S. dollars per metric ton of CO₂
+                    #exchange average of 0.91 Euro per US$
+                    #recalc mrd Euro per mio metric ton
+
+                    if not year in dataset:
+                        dataset[year] = value
         return dataset
     def read_co2_prices_euets(self, delimiter = ";"):
         dataset = {}
