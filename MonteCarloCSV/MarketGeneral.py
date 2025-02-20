@@ -62,6 +62,7 @@ class MarketGeneral:
         self.__delta_co2_emission_global_pi.append(delta_co2_emission_global)
         self.co2_emission_global +=delta_co2_emission_global
         return
+
     def sim_new_year(self):
         self.__set_business_power_global()
         self.__set_market_condition_global()
@@ -89,10 +90,6 @@ class MarketGeneral:
 
         weight_nature = random.gauss(mu, sigma)
         capital_nature = weight_nature*capital
-
-        self.count_company = num_companies
-
-
 
         return  business_value, capital, capital_nature, delta_business_value
 

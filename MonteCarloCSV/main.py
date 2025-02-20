@@ -41,7 +41,7 @@ def parse_arguments():
     parser.add_argument("--RemainingMinutes", default="360")
     parser.add_argument("--RemainingStoryPoints", default="10")
 
-    parser.add_argument("--Trials", default="100")
+    parser.add_argument("--Trials", default="10")
     parser.add_argument("--NumComp", default="5000")
     parser.add_argument("--Run", default="parallel")
 
@@ -103,6 +103,9 @@ def get_ger_capbig_year_value(csv_service):
 def get_carbon_credit_year_value(csv_service):
     datasets = csv_service.read_carbon_credits_list()
     return datasets
+def get_grow_rate_year_value(csv_service):
+    dataset = csv_service.read_grow_rate_list()
+    return dataset
 def get_ger_total_assets_year_value(csv_service):
     datasets = csv_service.read_ger_total_assets_list()
     return datasets
@@ -426,7 +429,7 @@ def main():
                 data_capbig_year_value = get_ger_capbig_year_value(csv_service)
                 data_carbon_credits_year_value = get_carbon_credit_year_value(csv_service)
                 data_total_assets_year_value = get_ger_total_assets_year_value(csv_service)
-
+                data_company_grow_rate_year_value = get_grow_rate_year_value(csv_service)
                 data_emissions_year_value = get_ger_co2_emissions_year_value(csv_service)
                 data_investment_by_category_year_value = get_investment_compcat_year_value(csv_service)
                 data_co2_price_year_value = get_co2_price_euets_year_value(csv_service)
@@ -527,6 +530,7 @@ def main():
                                                                          data_co2_free_allowances_value,
                                                                          data_co2_sold_allowances_value,
                                                                          data_co2_subvention_value,
+                                                                         data_company_grow_rate_year_value,
                                                                          data_emissions_year_value,
                                                                          data_gdp_year_value,
                                                                          data_investment_by_category_year_value,
@@ -666,9 +670,8 @@ def main():
             case 4:
                 print("ongoing ....")
 
-                #csv_service.save_mc_result(mc_result)
 
-                monte_carlo_mkt.plot_results(mc_result)
+                monte_carlo_mkt.plot_results(mc_result, csv_service)
         print()
         print("================================================================")
         print("Simulation {0} Terminated".format(simId))

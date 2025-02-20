@@ -58,6 +58,7 @@ class MonteCarloMarket:
                          data_co2_free_allowances_value,
                          data_co2_sold_allowances_value,
                          data_co2_subvention_value,
+                         data_company_grow_rate_year_value,
                          data_verified_emissions_year_value,
                          data_gdp_year_value,
                          data_investment_by_category_year_value,
@@ -79,6 +80,7 @@ class MonteCarloMarket:
         mc_result['data']['carbon_credits'] = data_carbon_credits_year_value# mio metric tone
         mc_result['data']['co2_emission_global'] = data_co2_emission_global_year_value
         mc_result['data']['co2_subvention'] = data_co2_subvention_value #metric tone
+        mc_result['data']['grow_rate'] = data_company_grow_rate_year_value # no unit
         mc_result['data']['free_allowances'] = data_co2_free_allowances_value #metric tone
         mc_result['data']['gdp'] = data_gdp_year_value # in million euro
         mc_result['data']['investment_by_company_category'] = data_investment_by_category_year_value# million eur per staff-size???
@@ -397,7 +399,6 @@ class MonteCarloMarket:
         data_collection['delta_carbon_credits']     = {}
         data_collection['delta_co2_consumption']    = {}
         data_collection['delta_co2_emission_global']= {}
-        #data_collection['delta_co2_price']          = {}
         data_collection['delta_co2_subvention']     = {}
         data_collection['delta_free_allowances']    = {}
         data_collection['delta_sale_allowances']    = {}
@@ -524,7 +525,7 @@ class MonteCarloMarket:
         data_collection['delta_capital_nature_pi']      = self.create_sim_base(data_collection['delta_capital_nature'])
         data_collection['delta_carbon_credits_pi']      = self.create_sim_base(data_collection['delta_carbon_credits'])
         data_collection['delta_co2_emission_global_pi'] = self.create_sim_base(data_collection['delta_co2_emission_global'])
-        #data_collection['delta_co2_price_pi']           = self.create_sim_base(data_collection['delta_co2_price'])
+        data_collection['grow_rate_pi']                 = self.create_sim_base(data_collection['grow_rate'])
         data_collection['delta_co2_subvention_pi']      = self.create_sim_base(data_collection['delta_co2_subvention'])
         data_collection['delta_free_allowances_pi']     = self.create_sim_base(data_collection['delta_free_allowances'])
         data_collection['delta_sale_allowances_pi']     = self.create_sim_base(data_collection['delta_sale_allowances'])
@@ -584,6 +585,7 @@ class MonteCarloMarket:
             company.business_power, company.is_alive, company.market_influence = general_market.sim_company_situation(company)
             com_list[cnt_com] = company
             cnt_com+= 1
+        general_market.count_company = self.number_companies
         general_market.sim_start_rest_of_the_world(com_list)
         return com_list
 
@@ -628,26 +630,9 @@ class MonteCarloMarket:
                                sale_allowances_start,
                                )
 
-        rest_of_the_world.co2_emission = co2_emission_total_start - co2_emission_sum_start
-        rest_of_the_world.co2_intensity = co2_market.co2_intensity
+        #rest_of_the_world.co2_emission = co2_emission_total_start - co2_emission_sum_start
+        co2_market.sim_start_of_company(company_list, rest_of_the_world, co2_emission_total_start, co2_emission_sum_start)
 
-        calc_emission_sum = 0
-        random_values = np.random.rand(len(company_list))  # Erzeugt X zufällige Werte zwischen 0 und 1
-        random_proportions = random_values / random_values.sum()  # Normalisieren auf Summe 1
-        for index in company_list:
-            company = company_list[index]
-            company.co2_emission = co2_market.co2_emission_sum * random_proportions[index]
-            company.co2_intensity = co2_market.co2_intensity
-
-            #company.delta_co2_emission = company.co2_intensity * company.delta_business_value
-            #co2_market.calc_company_start_situation(
-
-            calc_emission_sum += company.co2_emission
-        rest_emissions = co2_market.co2_emission_sum - calc_emission_sum
-        if rest_emissions != 0:
-            id = random.randint(0, (len(company_list)-1))
-            company = company_list[id]
-            company.co2_emission+= rest_emissions
         return co2_market
 
     def __calc_eco_performance(self, co2_em, co2_consumption, state_of_atmosphere_last_year):
@@ -741,6 +726,8 @@ class MonteCarloMarket:
             ## log all infos
             co2_market.log_to_journal(year)
             general_market.log_to_journal(year)
+
+            self.__new_participants(company_list, co2_market, general_market)
             ### for progress check on long runs
             if progress_counter % 10 == 0:
                 total = (self.target_year-self.start_year)
@@ -888,6 +875,28 @@ class MonteCarloMarket:
             company.saldo_nature = co2_market.calc_company_nature_saldo(company)
             #sum_delta_capital_nature += company.saldo_nature
         #co2_market.delta_capital_nature_sum =sum_delta_capital_nature
+    def __new_participants(self,company_list, co2_market, general_market):
+        mu = mean(self.mc_data['grow_rate_pi'])
+        sigma = stdev(self.mc_data['grow_rate_pi'])
+        grow_rate = random.gauss(mu, sigma)
+
+        if grow_rate > 0:
+            number_new = int(round(grow_rate * len(company_list), 0))
+            index = 0
+            max_id = max(company_list.keys())
+            while index<number_new:
+                business_value, capital, capital_nature, delta_business_value = general_market.sim_start_of_company(number_new+len(company_list))
+                company = Company(business_value, capital, capital_nature, delta_business_value)
+                general_market.rest_of_the_world.business_value -=business_value
+                general_market.rest_of_the_world.capital -=capital
+                index+=1
+                company_list[max_id+index] = company
+        general_market.count_company = len(company_list)
+
+
+        #co2_market.sim_start_of_company(company_list, general_market.rest_of_the_world, general_market.co2_emission_total_start, co2_emission_sum_new)
+
+        return
     def __check_surviver(self,company_list, dead_list):
         new_company_list = {}
         for id, company in company_list.items():
@@ -1217,7 +1226,7 @@ class MonteCarloMarket:
         return
 
 
-    def plot_results(self, mc_result):
+    def plot_results(self, mc_result, csv_service):
 
 
         self.plot_data = mc_result
@@ -1252,10 +1261,13 @@ class MonteCarloMarket:
         #self.transform_data_and_plot(
         #    ('general_market', 'Co2_Emission_sum', 'co2_emission_sum', 'co2_emission_sum','mio metric tones Co2 Emission')
         #)
+        self.csv_service = csv_service
         plot_time_start = datetime.now()
         with ProcessPoolExecutor() as executor:
             keys = plot_labels
             executor.map(self.transform_data_and_plot, keys)
+            #csv_service.save_mc_result_sim4(transformed_data, plot_labels, self.start_year, self.target_year)
+
         plot_time_end = datetime.now()
         delta_time = plot_time_end-plot_time_start
         print("Time to generat plots: {0}".format(delta_time))
@@ -1305,7 +1317,8 @@ class MonteCarloMarket:
                         year+= 1
 
         self.plot_mc_results(data, plot_name, unit)
-        return
+        self.csv_service.save_mc_result_sim4(data, tuple, self.start_year, self.target_year)
+        return data
 
 
 

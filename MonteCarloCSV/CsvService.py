@@ -58,6 +58,31 @@ class CsvService:
                         data[column_name].append('')
             self.__write_into_file(data, delimiter, file_path)
         return
+    def save_mc_result_sim4(self, data_in, tuple, start_year, target_year, file_pre="sim4", delimiter=";"):
+        name_file = tuple[1]
+        name_sce = tuple[3]
+        unit = tuple[4]
+        dir = "result_data_{0}".format(file_pre)
+        current_date = datetime.now().strftime('%Y%m%d_%H%M')
+        file_path = os.path.join(dir, '{0}_{1}_{2}.csv'.format(file_pre,current_date,name_file))
+        data_out = { 'year' : [],
+                     'unit' : []}
+        for scenario, entry in data_in.items():
+            year = start_year
+            while year <= target_year:
+                data_out['year'].append(year)
+                if year in entry:
+                    for col_name,value in entry[year].items():
+                        #col_name can be mean, min, max
+                        column = "{0}_{1}_{2}".format(scenario,col_name, name_sce)
+                        if not column in data_out:
+                            data_out[column] = []
+                        data_out[column].append(value)
+                    data_out['unit'].append(unit)
+                year +=1
+
+        self.__write_into_file(data_out, delimiter, file_path)
+        return
 
     def __write_into_file(self, data, delimiter, file_path):
         #print (data)
@@ -150,6 +175,24 @@ class CsvService:
                         dataset[year] = value
 
         return dataset
+    def read_grow_rate_list(self, delimiter = ";"):
+        dataset = {}
+        file_path = "sim4_uzw.csv"
+        print("Loading Items from CSV File: '{0}'.".format(file_path))
+        with open(file_path, "r") as file:
+            # Iteriere durch jede Zeile der Datei
+            for row in file:
+                # Entferne führende und abschließende Leerzeichen (z. B. '\n')
+                row = row.strip()
+                # Überspringe Zeilen, die mit '#' beginnen
+                if not row.startswith("#"):
+                    data = row.split(delimiter)
+                    year = int(data[0])
+                    value = [float(data[7])] #read values in mio metric ton
+                    if not year in dataset and not year == 2019: #2019 wurde die statistische Erfassung von Daten geändert, daher ist die Zuwachsrate nicht berechenbar
+                        dataset[year] = value
+
+        return dataset
     def read_carbon_credits_list(self, delimiter = ";"):
         dataset = {}
         file_path = "sim4_cc.csv"
@@ -168,7 +211,6 @@ class CsvService:
                         dataset[year] = value
 
         return dataset
-        return {}
     def read_ger_capbig_list(self, delimiter = ";"):
         dataset = {}
         file_path = "sim4_ums_big_ger.csv"

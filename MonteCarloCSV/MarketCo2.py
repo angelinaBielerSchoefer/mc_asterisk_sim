@@ -2,6 +2,7 @@ import random
 import math
 from statistics import mean, stdev
 
+import numpy as np
 from mesonbuild.scripts.env2mfile import detect_missing_native_binaries
 
 
@@ -147,7 +148,33 @@ class MarketCo2:
         delta_carbon_credits = random.gauss(mu, sigma)
         self.__delta_carbon_credits_pi.append(delta_carbon_credits)
         return delta_carbon_credits
+    def sim_start_of_company(self, company_list, rest_of_the_world, co2_emission_total_start, co2_emission_sum_start):
 
+        rest_of_the_world.co2_emission = co2_emission_total_start - co2_emission_sum_start
+        rest_of_the_world.co2_intensity = self.co2_intensity
+
+
+        calc_emission_sum = 0
+        random_values = np.random.rand(len(company_list))  # Erzeugt X zufällige Werte zwischen 0 und 1
+        random_proportions = random_values / random_values.sum()  # Normalisieren auf Summe 1
+        for index in company_list:
+            company = company_list[index]
+            company.co2_emission = self.co2_emission_sum * random_proportions[index]
+
+            mu = self.co2_intensity
+            sigma = 0.1 * mu
+            company.co2_intensity = random.gauss(mu,sigma)
+
+            #company.delta_co2_emission = company.co2_intensity * company.delta_business_value
+            #co2_market.calc_company_start_situation(
+
+            calc_emission_sum += company.co2_emission
+        rest_emissions = self.co2_emission_sum - calc_emission_sum
+        if rest_emissions != 0:
+            id = random.randint(0, (len(company_list)-1))
+            company = company_list[id]
+            company.co2_emission+= rest_emissions
+        return
     def calc_company_start_situation(self, delta_business_value, emission_avg, stdev_emission):
 
         sigma = stdev_emission
