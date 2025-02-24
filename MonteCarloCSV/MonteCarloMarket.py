@@ -679,6 +679,8 @@ class MonteCarloMarket:
             self.mc_data['market_conditions_pi'],
         )
 
+        max_id = max(company_list.keys())
+
         co2_market = self.__create_co2_market(  self.mc_data['capital_nature'][self.start_year],
                                                 self.mc_data['carbon_credits'][self.start_year],
                                                 self.mc_data['co2_consumption'][self.start_year],
@@ -700,12 +702,11 @@ class MonteCarloMarket:
                                                 self.assume['share_of_idle']
                                                 )
         year = self.start_year
-        dead_list = []
         while year < self.target_year:
             ### simulate
             progress_counter +=1
             self.__simulate_market_and_choose_company_options(company_list, co2_market, general_market, year)
-            company_list, dead_list = self.__check_surviver(company_list, dead_list)
+            company_list, dead_list, max_id = self.__check_surviver(company_list, dead_list, general_market)
 
             #############################grant free allowances##############################################
             ##INPUT: company.co2_apply_free, co2_market.free_allowances
@@ -727,7 +728,7 @@ class MonteCarloMarket:
             co2_market.log_to_journal(year)
             general_market.log_to_journal(year)
 
-            self.__new_participants(company_list, co2_market, general_market)
+            self.__new_participants(company_list, co2_market, general_market, max_id)
             ### for progress check on long runs
             if progress_counter % 10 == 0:
                 total = (self.target_year-self.start_year)
@@ -875,7 +876,8 @@ class MonteCarloMarket:
             company.saldo_nature = co2_market.calc_company_nature_saldo(company)
             #sum_delta_capital_nature += company.saldo_nature
         #co2_market.delta_capital_nature_sum =sum_delta_capital_nature
-    def __new_participants(self,company_list, co2_market, general_market):
+
+    def __new_participants(self,company_list, co2_market, general_market, max_id):
         mu = mean(self.mc_data['grow_rate_pi'])
         sigma = stdev(self.mc_data['grow_rate_pi'])
         grow_rate = random.gauss(mu, sigma)
@@ -883,12 +885,14 @@ class MonteCarloMarket:
         if grow_rate > 0:
             number_new = int(round(grow_rate * len(company_list), 0))
             index = 0
-            max_id = max(company_list.keys())
             while index<number_new:
                 business_value, capital, capital_nature, delta_business_value = general_market.sim_start_of_company(number_new+len(company_list))
                 company = Company(business_value, capital, capital_nature, delta_business_value)
                 general_market.rest_of_the_world.business_value -=business_value
                 general_market.rest_of_the_world.capital -=capital
+
+                co2_market.sim_entrance_new_company(company, len(company_list), general_market.rest_of_the_world)
+
                 index+=1
                 company_list[max_id+index] = company
         general_market.count_company = len(company_list)
@@ -897,15 +901,27 @@ class MonteCarloMarket:
         #co2_market.sim_start_of_company(company_list, general_market.rest_of_the_world, general_market.co2_emission_total_start, co2_emission_sum_new)
 
         return
-    def __check_surviver(self,company_list, dead_list):
+    def __check_surviver(self,company_list, dead_list, general_market):
         new_company_list = {}
         for id, company in company_list.items():
             #company = company_list[index]
             if company.is_alive:
                 new_company_list[id] = company
             else:
-                dead_list.append(company)
-        return new_company_list, dead_list
+                dead_list[id] = company
+                general_market.rest_of_the_world.business_value += company.business_value
+                general_market.rest_of_the_world.capital += company.capital
+                general_market.rest_of_the_world.co2_emission += company.co2_emission
+
+        max_id_alive = max(new_company_list.keys())
+        if len(dead_list) == 0:
+            max_id_dead = 0
+            #return 0 as max value in case dead_list is empty
+        else:
+            max_id_dead = max(dead_list.keys())
+
+        max_id = max(max_id_alive, max_id_dead)
+        return new_company_list, dead_list, max_id
 
     def __company_run_business_and_nature(self,company, co2_market, general_market):
         ## calc business value
@@ -1317,7 +1333,7 @@ class MonteCarloMarket:
                         year+= 1
 
         self.plot_mc_results(data, plot_name, unit)
-        self.csv_service.save_mc_result_sim4(data, tuple, self.start_year, self.target_year)
+        self.csv_service.save_mc_result_sim4(data, tuple, self.start_year, self.target_year, self.end_time.strftime('%Y%m%d_%H%M'))
         return data
 
 

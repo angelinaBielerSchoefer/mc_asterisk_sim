@@ -58,12 +58,11 @@ class CsvService:
                         data[column_name].append('')
             self.__write_into_file(data, delimiter, file_path)
         return
-    def save_mc_result_sim4(self, data_in, tuple, start_year, target_year, file_pre="sim4", delimiter=";"):
+    def save_mc_result_sim4(self, data_in, tuple, start_year, target_year, current_date = datetime.now().strftime('%Y%m%d_%H%M'), file_pre="sim4", delimiter=";"):
         name_file = tuple[1]
         name_sce = tuple[3]
         unit = tuple[4]
         dir = "result_data_{0}".format(file_pre)
-        current_date = datetime.now().strftime('%Y%m%d_%H%M')
         file_path = os.path.join(dir, '{0}_{1}_{2}.csv'.format(file_pre,current_date,name_file))
         data_out = { 'year' : [],
                      'unit' : []}

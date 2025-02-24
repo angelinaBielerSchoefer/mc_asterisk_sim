@@ -148,6 +148,15 @@ class MarketCo2:
         delta_carbon_credits = random.gauss(mu, sigma)
         self.__delta_carbon_credits_pi.append(delta_carbon_credits)
         return delta_carbon_credits
+
+    def __sim_start_co2_intensity(self):
+        co2_intensity = 0
+        while co2_intensity <= 0:
+            mu = self.co2_intensity
+            sigma = self.__assume['stdev_start_co2_intensity']
+            co2_intensity = random.gauss(mu,sigma)
+        return co2_intensity
+
     def sim_start_of_company(self, company_list, rest_of_the_world, co2_emission_total_start, co2_emission_sum_start):
 
         rest_of_the_world.co2_emission = co2_emission_total_start - co2_emission_sum_start
@@ -161,12 +170,7 @@ class MarketCo2:
             company = company_list[index]
             company.co2_emission = self.co2_emission_sum * random_proportions[index]
 
-            mu = self.co2_intensity
-            sigma = 0.1 * mu
-            company.co2_intensity = random.gauss(mu,sigma)
-
-            #company.delta_co2_emission = company.co2_intensity * company.delta_business_value
-            #co2_market.calc_company_start_situation(
+            company.co2_intensity = self.__sim_start_co2_intensity()
 
             calc_emission_sum += company.co2_emission
         rest_emissions = self.co2_emission_sum - calc_emission_sum
@@ -174,6 +178,19 @@ class MarketCo2:
             id = random.randint(0, (len(company_list)-1))
             company = company_list[id]
             company.co2_emission+= rest_emissions
+        return
+    def sim_entrance_new_company(self, company,
+                                       cnt_company,
+                                       rest_of_the_world):
+        random_values = np.random.rand(cnt_company+1)
+        random_proportions = random_values / random_values.sum()
+        company.co2_emission = self.co2_emission_sum * random_proportions[-1] #last entrance shall be the new share of new entered company
+
+        company.co2_intensity = self.__sim_start_co2_intensity()
+
+        self.co2_emission_sum += company.co2_emission
+        rest_of_the_world.co2_emission -= company.co2_emission
+
         return
     def calc_company_start_situation(self, delta_business_value, emission_avg, stdev_emission):
 
