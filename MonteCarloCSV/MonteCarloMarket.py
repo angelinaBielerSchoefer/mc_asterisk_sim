@@ -395,6 +395,7 @@ class MonteCarloMarket:
         data_collection['co2_intensity']            = {}
         data_collection['co2_investment']           = {}
         data_collection['delta_capital']            = {}
+        data_collection['delta_capital_pi_base']            = {}
         data_collection['delta_capital_nature']     = {}
         data_collection['delta_carbon_credits']     = {}
         data_collection['delta_co2_consumption']    = {}
@@ -501,6 +502,7 @@ class MonteCarloMarket:
 
             if cnt_y in data_collection['capital_total'] and cnt_y-1 in data_collection['capital_total']:
                 data_collection['delta_capital'][cnt_y] = data_collection['capital_total'][cnt_y] - data_collection['capital_total'][cnt_y-1]
+                data_collection['delta_capital_pi_base'][cnt_y] = [data_collection['delta_capital'][cnt_y]]
             if cnt_y in data_collection['capital_nature'] and (cnt_y-1) in data_collection['capital_nature']:
                 data_collection['delta_capital_nature'][cnt_y] = [data_collection['co2_investment'][cnt_y][-1] - data_collection['co2_investment'][cnt_y-1][-1]]
 
@@ -523,6 +525,7 @@ class MonteCarloMarket:
         data_collection['delta_carbon_credits_pi']      = self.create_sim_base(data_collection['delta_carbon_credits'])
         data_collection['delta_co2_emission_global_pi'] = self.create_sim_base(data_collection['delta_co2_emission_global'])
         data_collection['delta_gdp_pi']                 = self.create_sim_base(data_collection['delta_gdp_pi_base'])
+        data_collection['delta_capital_pi']             = self.create_sim_base(data_collection['delta_capital_pi_base'])
 
         data_collection['grow_rate_pi']                 = self.create_sim_base(data_collection['grow_rate'])
         data_collection['delta_co2_subvention_pi']      = self.create_sim_base(data_collection['delta_co2_subvention'])
@@ -557,6 +560,7 @@ class MonteCarloMarket:
                                 co2_investment_share_pi,
                                 gdp_start,
                                 market_condition_pi,
+                                year
                                 ):
         general_market = MarketGeneral(self.assume,
                                        business_power_pi,
@@ -573,16 +577,17 @@ class MonteCarloMarket:
                                        market_condition_pi
                                        )
 
-        company_list = self.__create_company_list(general_market)
+        company_list = self.__create_company_list(general_market,year)
 
         return company_list, general_market
 
-    def __create_company_list(self, general_market):
+    def __create_company_list(self, general_market,year):
         cnt_com=0
         com_list = {}
         while cnt_com<self.number_companies:
-            business_value_start, capital_start, capital_nature_start, delta_business_value_start= general_market.sim_start_of_company(self.number_companies)
+            business_value_start, capital_start, capital_nature_start, delta_business_value_start, journal= general_market.sim_start_of_company(self.number_companies,year)
             company = Company(business_value_start, capital_start, capital_nature_start, delta_business_value_start)
+            company.journal = journal
             company.business_power, company.is_alive, company.market_influence = general_market.sim_company_situation(company)
             com_list[cnt_com] = company
             cnt_com+= 1
@@ -679,6 +684,7 @@ class MonteCarloMarket:
             self.mc_data['co2_investment_share_pi'],
             self.mc_data['gdp'][self.start_year],
             self.mc_data['market_conditions_pi'],
+            self.start_year
         )
 
         max_id = max(company_list.keys())
@@ -730,13 +736,14 @@ class MonteCarloMarket:
             co2_market.log_to_journal(year)
             general_market.log_to_journal(year)
 
-            self.__new_participants(company_list, co2_market, general_market, max_id)
             ### for progress check on long runs
             if progress_counter % 10 == 0:
                 total = (self.target_year-self.start_year)
                 print("Trial: {0} Progress: {1} %".format(trials_id, round(100*progress_counter/total,2)))
 
             year += 1
+
+            self.__new_participants(company_list, co2_market, general_market, max_id, year)
         mc_result={
 
             'company_list'  : company_list,
@@ -880,7 +887,7 @@ class MonteCarloMarket:
             #sum_delta_capital_nature += company.saldo_nature
         #co2_market.delta_capital_nature_sum =sum_delta_capital_nature
 
-    def __new_participants(self,company_list, co2_market, general_market, max_id):
+    def __new_participants(self,company_list, co2_market, general_market, max_id, year):
         mu = mean(self.mc_data['grow_rate_pi'])
         sigma = stdev(self.mc_data['grow_rate_pi'])
         grow_rate = random.gauss(mu, sigma)
@@ -889,14 +896,15 @@ class MonteCarloMarket:
             number_new = int(round(grow_rate * len(company_list), 0))
             index = 0
             while index<number_new:
-                business_value, capital, capital_nature, delta_business_value = general_market.sim_start_of_company(number_new+len(company_list))
+                business_value, capital, capital_nature, delta_business_value, journal = general_market.sim_start_of_company(number_new+len(company_list), year)
                 company = Company(business_value, capital, capital_nature, delta_business_value)
-                general_market.rest_of_the_world.business_value -=business_value
-                general_market.rest_of_the_world.capital -=capital
+                company.journal = journal
+                general_market.rest_of_the_world.business_value -= business_value
+                general_market.rest_of_the_world.capital -= capital
 
                 co2_market.sim_entrance_new_company(company, len(company_list), general_market.rest_of_the_world)
 
-                index+=1
+                index += 1
                 company_list[max_id+index] = company
         general_market.count_company = len(company_list)
 
@@ -915,7 +923,7 @@ class MonteCarloMarket:
                 general_market.rest_of_the_world.business_value += company.business_value
                 general_market.rest_of_the_world.capital += company.capital
                 general_market.rest_of_the_world.co2_emission += company.co2_emission
-
+        print()
         max_id_alive = max(new_company_list.keys())
         if len(dead_list) == 0:
             max_id_dead = 0

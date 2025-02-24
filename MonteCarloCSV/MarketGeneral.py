@@ -70,20 +70,17 @@ class MarketGeneral:
         self.__set_emission_global()
         return self
 
-    def sim_start_of_company(self, num_companies):
+    def sim_start_of_company(self, num_companies, entrance_year):
         #### Start values provided by data
         ### normal distributed
+
         mu = self.gdp * self.start_business_value_share / num_companies
         sigma = self.__assume['stdev_start_value']/num_companies
         business_value = random.gauss(mu, sigma)
 
         mu = self.start_delta_gdp * self.start_business_value_share / num_companies
-        #sigma = 0.1 *mu #
         sigma = stdev(self.__delta_gdp_pi) *self.start_business_value_share /num_companies
-        #print ("sigma: {0}".format(sigma))
-        #print ("stdev(self.__delta_gdp_pi): {0}".format(sigma2))
         delta_business_value = random.gauss(mu, sigma)
-
 
         mu = self.capital_business * self.start_capital_share / num_companies
         sigma = self.__assume['stdev_start_assets']
@@ -95,7 +92,22 @@ class MarketGeneral:
         weight_nature = random.gauss(mu, sigma)
         capital_nature = weight_nature*capital
 
-        return  business_value, capital, capital_nature, delta_business_value
+        #history_years = range (entrance_year, )
+        journal = {}
+
+        business_value_r = business_value
+        capital_r = capital
+        year = entrance_year -1
+        while year > (entrance_year - 10):
+
+            if not year in journal:
+                journal[year] = {}
+            business_value_r, capital_r = self.__sim_reverse_journal(business_value_r, capital_r, num_companies)
+            journal[year]['business_value'] = business_value_r
+            journal[year]['capital']        = capital_r
+            year -= 1
+
+        return  business_value, capital, capital_nature, delta_business_value, journal
 
     def sim_start_rest_of_the_world(self, company_list):
         sum_bv = sum([company_list[index].business_value for index in company_list])
@@ -123,6 +135,19 @@ class MarketGeneral:
         is_alive = self.check_company_if_survived(company)
 
         return business_power, is_alive, market_influence
+    def __sim_reverse_journal(self, business_value, capital, num_companies):
+        mu = self.start_delta_gdp * self.start_business_value_share / num_companies
+        sigma = stdev(self.__delta_gdp_pi) * self.start_business_value_share /num_companies
+        delta_business_value = random.gauss(mu, sigma)
+
+        mu = self.start_delta_gdp * self.start_business_value_share / num_companies
+        sigma = stdev(self.__delta_gdp_pi) * self.start_business_value_share /num_companies
+        delta_capital = random.gauss(mu, sigma)
+
+        business_value -= delta_business_value
+        capital -= delta_capital
+        return  business_value, capital
+
     def check_company_if_survived(self, company):
         year = max(company.journal.keys())
         death_counter = 0
