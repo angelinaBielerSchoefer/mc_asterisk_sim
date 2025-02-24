@@ -285,7 +285,7 @@ def main():
                     'stdev_start_assets': float(2.9),##2,9 stdev of data total assets over the years
                     'stdev_start_invest': float(1.0),
                     'stdev_start_co2_emission': float(2),#random set
-                    'stdev_start_co2_intensity': float(0.10),#random set
+                    'stdev_start_co2_intensity': float(6.23314),#standard deviation taken from Co2-intensity deviation by sector: https://www.destatis.de/DE/Themen/Gesellschaft-Umwelt/Umwelt/UGR/_Grafik/_Interaktiv/co2-emissionsintensitaet.html
                     'stdev_start_value': float(666), ##666 stdev of data gdp over the years
                 }
             case _:

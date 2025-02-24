@@ -11,6 +11,7 @@ class MarketGeneral:
                  start_capital_total,
                  start_capital_share,
                  delta_co2_emission_global_pi,
+                 delta_gdp_pi,
                  start_co2_emission_global,
                  start_delta_gdp,
                  co2_investment_share_pi,
@@ -22,7 +23,7 @@ class MarketGeneral:
         self.__co2_investment_share_pi =co2_investment_share_pi
         self.__market_condition_pi = market_condition_pi
         self.__delta_co2_emission_global_pi = delta_co2_emission_global_pi
-
+        self.__delta_gdp_pi = delta_gdp_pi
         self.__set_business_power_global()
         self.__set_market_condition_global()
 
@@ -77,7 +78,10 @@ class MarketGeneral:
         business_value = random.gauss(mu, sigma)
 
         mu = self.start_delta_gdp * self.start_business_value_share / num_companies
-        sigma = 0.1 * mu
+        #sigma = 0.1 *mu #
+        sigma = stdev(self.__delta_gdp_pi) *self.start_business_value_share /num_companies
+        #print ("sigma: {0}".format(sigma))
+        #print ("stdev(self.__delta_gdp_pi): {0}".format(sigma2))
         delta_business_value = random.gauss(mu, sigma)
 
 

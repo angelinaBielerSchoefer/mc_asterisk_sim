@@ -403,12 +403,12 @@ class MonteCarloMarket:
         data_collection['delta_free_allowances']    = {}
         data_collection['delta_sale_allowances']    = {}
         data_collection['delta_gdp']                = {}
+        data_collection['delta_gdp_pi_base']        = {}
         data_collection['eco_performance']          = {}
         data_collection['market_conditions']        = {}
         data_collection['market_conditions_nature'] = {}
         data_collection['sales_volume_category']    = {}
         data_collection['share_of_co2_investment']  = {}
-        data_collection['share_of_co2_idle']        = {}
         data_collection['share_of_gdp']             = {}
         data_collection['share_of_total_assets']    = {}
 
@@ -424,6 +424,7 @@ class MonteCarloMarket:
             #    data_collection['delta_co2_emission'][cnt_y] = [data_collection['co2_emission'][cnt_y] - data_collection['co2_emission'][cnt_y-1]]
             if cnt_y in data_collection['gdp'] and (cnt_y-1) in data_collection['gdp']:
                 data_collection['delta_gdp'][cnt_y] = data_collection['gdp'][cnt_y] - data_collection['gdp'][cnt_y-1]
+                data_collection['delta_gdp_pi_base'][cnt_y] = [data_collection['delta_gdp'][cnt_y] ]
             #if cnt_y in data_collection['co2_price']:
             ##     data_collection['co2_price'][cnt_y] =[data_collection['co2_price'][cnt_y]]
             #if cnt_y in data_collection['co2_price'] and (cnt_y-1) in data_collection['co2_price']:
@@ -436,10 +437,6 @@ class MonteCarloMarket:
                 data_collection['delta_carbon_credits'][cnt_y] = [data_collection['carbon_credits'][cnt_y] - data_collection['carbon_credits'][cnt_y-1]]
             if cnt_y in data_collection['sold_allowances'] and (cnt_y-1) in data_collection['sold_allowances']:
                 data_collection['delta_sale_allowances'][cnt_y] = [data_collection['sold_allowances'][cnt_y] - data_collection['sold_allowances'][cnt_y-1]]
-
-            ##### ASSUMPTION #####
-            if cnt_y in data_collection['verified_co2_emission'] and cnt_y in data_collection['co2_emission_sum']:
-                data_collection['share_of_co2_idle'][cnt_y] = data_collection['verified_co2_emission'][cnt_y] / data_collection['co2_emission_sum'][cnt_y]
 
             if cnt_y in data_collection['business_values'] and cnt_y in data_collection['gdp']:
                 data_collection['share_of_gdp'][cnt_y] = [data_collection['business_values'][cnt_y] / data_collection['gdp'][cnt_y]]
@@ -525,6 +522,8 @@ class MonteCarloMarket:
         data_collection['delta_capital_nature_pi']      = self.create_sim_base(data_collection['delta_capital_nature'])
         data_collection['delta_carbon_credits_pi']      = self.create_sim_base(data_collection['delta_carbon_credits'])
         data_collection['delta_co2_emission_global_pi'] = self.create_sim_base(data_collection['delta_co2_emission_global'])
+        data_collection['delta_gdp_pi']                 = self.create_sim_base(data_collection['delta_gdp_pi_base'])
+
         data_collection['grow_rate_pi']                 = self.create_sim_base(data_collection['grow_rate'])
         data_collection['delta_co2_subvention_pi']      = self.create_sim_base(data_collection['delta_co2_subvention'])
         data_collection['delta_free_allowances_pi']     = self.create_sim_base(data_collection['delta_free_allowances'])
@@ -552,6 +551,7 @@ class MonteCarloMarket:
                                 start_capital_total,
                                 capital_business_share_start,
                                 delta_co2_emission_global_pi,
+                                delta_gdp_pi,
                                 co2_emission_global_start,
                                 start_delta_business_value,
                                 co2_investment_share_pi,
@@ -565,6 +565,7 @@ class MonteCarloMarket:
                                        start_capital_total,
                                        capital_business_share_start,
                                        delta_co2_emission_global_pi,
+                                       delta_gdp_pi,
                                        co2_emission_global_start,
                                        start_delta_business_value,
                                        co2_investment_share_pi,
@@ -672,6 +673,7 @@ class MonteCarloMarket:
             self.mc_data['capital_total'][self.start_year],
             self.mc_data['share_of_total_assets'][self.start_year][-1],
             self.mc_data['delta_co2_emission_global_pi'],
+            self.mc_data['delta_gdp_pi'],
             self.mc_data['co2_emission_global'][self.start_year],
             self.mc_data['delta_gdp'][self.start_year],
             self.mc_data['co2_investment_share_pi'],
@@ -785,9 +787,10 @@ class MonteCarloMarket:
 
         ###5. calc co2 market
         co2_market.co2_apply_free_sum = sum_apply_free
-
         co2_market.co2_emission_sum = sum_co2_emission
         co2_market.total_capital_nature = sum_capital_nature
+        business_value_sum = general_market.gdp-general_market.rest_of_the_world.business_value
+        co2_market.co2_intensity = co2_market.co2_emission_sum / business_value_sum
 
         return
 
@@ -1270,8 +1273,9 @@ class MonteCarloMarket:
             ('co2_market', 'Verified_Emissions', 'verified_co2_emission', 'remaining_stock','in mio metric ton of Co2 equivalence'),
 
             ('co2_market', 'Co2_Emission_sum', 'co2_emission_sum', 'co2_emission_sum','mio metric tones Co2 Emission'),
+            ('co2_market', 'Co2_Intensity', 'co2_intensity', 'co2_intensity','mio metric tones Co2 Emission equivalence per Mrd Euro'),
             ('co2_market', 'Co2_Consumption', 'co2_consumption', 'co2_consumption','in mio metric tons Co2 equivalence'),
-            ('co2_market', 'Co2_Subvention', 'co2_subvention', 'co2_subvention','in mrd Euro'),
+            ('co2_market', 'Co2_Subvention', 'co2_subvention', 'co2_subvention','in Mrd Euro'),
 
         ]
         #self.transform_data_and_plot(
