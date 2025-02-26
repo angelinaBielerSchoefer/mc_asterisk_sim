@@ -23,7 +23,7 @@ def parse_arguments():
     parser.add_argument("--RemainingItems", default="10")
     parser.add_argument("--History", default="360")
     parser.add_argument("--SaveCharts", default=True, action=argparse.BooleanOptionalAction)
-    parser.add_argument("--SimulationId", default="0")
+    parser.add_argument("--SimulationId", default="4")
     ## simID 0 = Simulation der WorkItems sim(remainingItems)= Wann fertig; sim(Verbleibende Tage)= Wieviele Items werden fertig
     ## simID 1 = Simulation für PI Annäherung
     ## simID 2 = Simulation der Workload sim(StoryPoins) = Zeitschätzung zur Fertigstellung; sim(verbleibende Zeit in min) = wieviele Storypoints sind schaffbar
@@ -42,7 +42,7 @@ def parse_arguments():
     parser.add_argument("--RemainingStoryPoints", default="10")
 
     parser.add_argument("--Trials", default="10")
-    parser.add_argument("--NumComp", default="5000")
+    parser.add_argument("--NumComp", default="1900")
     parser.add_argument("--Run", default="parallel")
 
     return parser.parse_args()
@@ -340,28 +340,6 @@ def main():
         print("FileName: {0}".format(file_name))
         print("Delimiter: {0}".format(delimiter))
         match simId:
-            case 0:
-                print("ClosedDateColumn: {0}".format(closed_date_column))
-                print("DateFormat: {0}".format(date_format))
-                print("TargetDate: {0}".format(target_date))
-                print("History: {0}".format(history))
-            case 1:
-                print("Radius: {0}".format(radius))
-                print("SquareSide: {0}".format(square_side))
-                print("NeedleXColumn: {0}".format(x_column))
-                print("NeedleYColumn: {0}".format(y_column))
-            case 2:
-                print("story_points_column: {0}".format(story_points_column))
-                print("time_spend_column: {0}".format(time_spend_column))
-                print("time_format: {0}".format(time_format))
-                print("Remaining Minutes: {0}".format(remainingMinutes))
-                print("Remaining StoryPoints: {0}".format(remainingStoryPoints))
-
-            case 3:
-                print("Start Year: {0}".format(start_year))
-                print("Target Year: {0}".format(target_year))
-                print("Planetary Boundary: {0}".format(pb_name))
-                print("Stations: {0}".format(station_shortcuts))
             case 4:
                 print("Start Year: {0}".format(start_year))
                 print("Target Year: {0}".format(target_year))
@@ -381,44 +359,6 @@ def main():
 
         #### Datensätze laden
         match simId:
-            case 0:
-                #### intern_sim0_readCSV():
-                closed_items_history = get_closed_items_history(csv_service, monte_carlo_service, file_name, delimiter, closed_date_column, date_format)
-                if len(closed_items_history) < 1:
-                    print("No closed items - skipping prediction")
-                    exit()
-            case 1:
-                #### intern_sim1_readCSV():
-                print( "Read Datasets in CSV of PI")
-                needle_datasets = get_needle_datasets(csv_service, monte_carlo_service, file_name, delimiter, x_column, y_column, radius, square_side)
-                if len(needle_datasets) < 1:
-                    print("No needle datasets - skipping prediction")
-                    exit()
-            case 2:
-                #### intern_sim2_readCSV():
-                print( "Read Datasets in CSV of  Workload")
-                storypoints_per_minute, minutes_per_storypoint, stratified_by_storypoint = get_workload_datasets(csv_service, monte_carlo_sim_workload, file_name, delimiter, story_points_column, time_spend_column, time_format)
-
-                if (len(storypoints_per_minute) < 1):
-                    print("Validitycheck of storypoints_per_minute failed, not enough data")
-                    exit()
-                if (len(minutes_per_storypoint) < 1):
-                    print("Validitycheck of minutes_per_storypoint failed, not enough data")
-                    exit()
-                if (len(stratified_by_storypoint) < 1):
-                    print("Validitycheck of stratified_by_storypoint failed, not enough data")
-                    exit()
-            case 3:
-                #### intern_sim3_readCSV():
-                print( "Read Datasets in CSV of Planetary Boundary Atmosphere")
-                #stations_year_month_value = get_station_year_month_value(csv_service, file_name)
-                data_gdp_year_value = get_gdp_year_value(csv_service)
-                data_total_assets_year_value = get_total_assets_year_value(csv_service)
-                data_atmosphere_year_value = get_atmospheric_state_year_value(csv_service)
-                data_emissions_year_value = get_co2_emissions_year_value(csv_service)
-                data_co2_price_year_value = get_co2_price_year_value(csv_service)
-                #print("Validity of Datasets: Not yet implemented")
-
             case 4:
                 print( "Read Datasets in CSV")
                 print( "not yet implemented")
@@ -447,77 +387,6 @@ def main():
         print("=========================================")
 
         match simId:
-            case 0:
-                #### intern_sim0_simulateMC():
-                ## Run How Many Predictions via Monte Carlo Simulation for our specified target date
-                predictions_howmany_50 = predictions_howmany_70 = predictions_howmany_85 = predictions_howmany_95 = 0
-                if target_date:
-                    (predictions_howmany_50, predictions_howmany_70, predictions_howmany_85, predictions_howmany_95) = monte_carlo_service.how_many(target_date, closed_items_history)
-
-
-                 ## Run When Predictions via Monte Carlo Simulation - only possible if we have specified how many items are remaining
-                predictions_when_50 = predictions_when_70 = predictions_when_85 = predictions_when_95 = datetime.today()
-                predictions_targetdate_likelyhood = None
-
-                if remaining_items > 0:
-                    (predictions_when_50, predictions_when_70, predictions_when_85, predictions_when_95, predictions_targetdate_likelyhood) = monte_carlo_service.when(remaining_items, closed_items_history, target_date)
-
-            case 1:
-                #### intern_sim1_simulateMC():
-                prediction_pi = monte_carlo_service.estimate_pi_by_precision(args.TargetPrecision,needle_datasets)
-
-            case 2:
-                #### intern_sim2_executeMC():
-                print( "Simulation execution of Workload")
-                print("-----------------------------------------")
-                print("implementation ongoing")
-                days = 1
-                hours_per_day = 6
-                remaining_minutes = 60 * days * hours_per_day
-
-                #How Many Storypoints per given minutes
-                #mean_storypoint_daily, std_dev_storypoint_daily = monte_carlo_sim_workload.how_many_storypoints(remaining_minutes)
-
-                days_per_week = 5
-                remaining_minutes_weekly = remaining_minutes* days_per_week
-
-                #How Many Storypoints per given minutes
-
-                #mean_storypoint_weekly, std_dev_storypoint_weekly = monte_carlo_sim_workload.how_many_storypoints(remaining_minutes_weekly)
-
-                #Result of How Many
-                #confidence_daily = round((1-(std_dev_storypoint_daily))*100, 1)
-                #mean_daily = round(mean_storypoint_daily, 1)
-
-                #confidence_weekly = round((1-(std_dev_storypoint_weekly))*100, 1)
-                #mean_weekly = round(mean_storypoint_weekly, 1)
-
-                #When/After How Many Hours will a given Number of Storypoints be done
-                sp_categories = [1,2,4,7,16, int(remainingStoryPoints)]
-                prediction_when = None
-                for cat in sp_categories:
-                    prediction_when = monte_carlo_sim_workload.when_storypoints_finalized(cat, prediction_when)
-                #### -> panda object DataFrame.from_dict (Prediction())
-
-                print("-----------------------------------------")
-                print(prediction_when)
-                print("-----------------------------------------")
-
-                print( "End-of: Simulation execution of Workload")
-                print("-----------------------------------------")
-
-            case 3:
-                #### intern_sim3_simulateMC():
-                print( "Simulation execution of state of Planetary Boundaries")
-                print("implementation ongoing")
-                mc_result, sig_result = monte_carlo_pb.start_simulation_in_three_scenarios(start_year, target_year, pb_name,
-                                                                                           data_gdp_year_value,
-                                                                                           data_total_assets_year_value,
-                                                                                           data_atmosphere_year_value,
-                                                                                           data_emissions_year_value,
-                                                                                           data_co2_price_year_value
-                                                                                           )
-                print( "End-of: Simulation execution of state of Planetary Boundaries")
             case 4:
                 #### intern_sim_4_simulateMC()
                 print( "Simulation execution of state of Co2 Market")
@@ -546,51 +415,6 @@ def main():
         print("================================================================")
         print()
         match simId:
-            case 0:
-                print("How many items will be done by {0}:".format(target_date))
-                print("50%: {0}".format(predictions_howmany_50))
-                print("70%: {0}".format(predictions_howmany_70))
-                print("85%: {0}".format(predictions_howmany_85))
-                print("95%: {0}".format(predictions_howmany_95))
-                print("----------------------------------------")
-
-                if remaining_items != 0:
-                    print("When will {0} items be done:".format(remaining_items))
-                    print("50%: {0}".format(predictions_when_50.strftime(args.TargetDateFormat)))
-                    print("70%: {0}".format(predictions_when_70.strftime(args.TargetDateFormat)))
-                    print("85%: {0}".format(predictions_when_85.strftime(args.TargetDateFormat)))
-                    print("95%: {0}".format(predictions_when_95.strftime(args.TargetDateFormat)))
-                    print("----------------------------------------")
-                    print("Chance of finishing the {0} remaining items till {1}: {2}%".format(remaining_items, target_date, predictions_targetdate_likelyhood))
-
-
-                print()
-                print()
-                print()
-                print("🛈 Want to learn more about how all of this works? Check out out website! 🛈")
-                print("🔗 https://letpeople.work 🔗")
-            case 1:
-                print( "Print Results of Simulation 1 here")
-            case 2:
-                print()
-                print()
-                print()
-
-                print("--- Results for Simulation: How Many Storypoint are finalized in given remaining time?")
-                #print("With {0} % confidence {1} Storypoints will be finalized Within one Day.".format(confidence_daily, mean_daily))
-                #print("With {0} % confidence {1} Storypoints will be finalized Within one Week.".format(confidence_weekly, mean_weekly))
-                print()
-                print()
-                print()
-
-                print("--- Results for Simulation: When (How many hours/days) will a given number of Storypoints need to be finalized?")
-                print("ongoing ....")
-                print()
-                print()
-                print()
-
-                print("--- Results for Simulation: When (How many hours/days) will a given number of Tickets with estimated Storypoints need to be finalized?")
-                print("ongoing ....")
             case 3:
 
                 csv_service.save_mc_result(mc_result)
@@ -669,8 +493,6 @@ def main():
                 print()
             case 4:
                 print("ongoing ....")
-
-
                 monte_carlo_mkt.plot_results(mc_result, csv_service)
         print()
         print("================================================================")

@@ -391,11 +391,11 @@ class MonteCarloMarket:
         data_collection['capital_business']         = {}
         data_collection['capital_nature']           = {}
         data_collection['co2_consumption']          = {}
-        data_collection['co2_emission_sum']       = {}
+        data_collection['co2_emission_sum']         = {}
         data_collection['co2_intensity']            = {}
         data_collection['co2_investment']           = {}
         data_collection['delta_capital']            = {}
-        data_collection['delta_capital_pi_base']            = {}
+        data_collection['delta_capital_pi_base']    = {}
         data_collection['delta_capital_nature']     = {}
         data_collection['delta_carbon_credits']     = {}
         data_collection['delta_co2_consumption']    = {}
@@ -773,8 +773,8 @@ class MonteCarloMarket:
             self.__run_company_annual_financial_status(company,general_market)
             self.__run_company_annual_nature_status(co2_market, company)
             #3. simulate options effect
-            #self.__run_company_budget_planning(company)
-            #self.__company_use_budget(company, co2_market, general_market)
+            self.__run_company_budget_planning(company,year)
+            self.__company_use_budget(company, co2_market, general_market)
             self.__company_run_business_and_nature(company, co2_market, general_market)
             company.log_to_journal(year)
 
@@ -923,7 +923,6 @@ class MonteCarloMarket:
                 general_market.rest_of_the_world.business_value += company.business_value
                 general_market.rest_of_the_world.capital += company.capital
                 general_market.rest_of_the_world.co2_emission += company.co2_emission
-        print()
         max_id_alive = max(new_company_list.keys())
         if len(dead_list) == 0:
             max_id_dead = 0
@@ -947,27 +946,30 @@ class MonteCarloMarket:
         return
     def __company_use_budget(self, company, co2_market, general_market):
 
-        ## SET bp and co2_intensity
+        ## SET bp
         budget = company.budget_to_improve[0]
-        general_market.company_option_improve_business_power(budget,company)
+        business_power_last_year = company.business_power
+        business_value_last_year = company.business_value
+        company.business_power = general_market.company_option_improve_business_power(budget,business_power_last_year, business_value_last_year)
 
 
         ## SET nature power
-        budget = company.budget_to_improve[1]
-        co2_market.company_option_improve_nature_power(budget, company)
+        #budget = company.budget_to_improve[1]
+        #co2_market.company_option_improve_nature_power(budget, company)
 
-        ## SET co2idle,
+        ## SET co2intensity,
         budget = company.budget_to_improve[2]
-        co2_market.company_option_improve_co2_emission_idle(budget, company)
+        co2_intensity_last_year = company.co2_intensity
+        company.co2_intensity = co2_market.company_option_improve_co2_intensity(budget, co2_intensity_last_year)
 
         ## SET business power down to apply free allowances
-        budget = company.budget_to_improve[3]
-        co2_market.company_option_apply_free_allowances(budget, company)
+        #budget = company.budget_to_improve[3]
+        #co2_market.company_option_apply_free_allowances(budget, company)
 
-    def __run_company_budget_planning(self, company):
+    def __run_company_budget_planning(self, company,year):
         ## split capital to business and nature purpose
         ## SET Budget for bp, np, co2idle, free_allowances, buy_allowances
-        company.capital_business = company.capital *0.8
+        company.capital_business = company.capital * 0.8
         company.capital_nature = company.capital * 0.2
 
         capital_business = company.capital_business
@@ -975,23 +977,32 @@ class MonteCarloMarket:
 
         ###4. budget planning to improve performance
 
-        share_to_improve_business_power = 0.1
-        share_to_improve_nature_power = 0.1
-        share_to_improve_co2_emission_idle = 0.1
-        share_to_improve_apply_free_allowances = 0.1
-        share_to_improve_buy_allowances = 0.7
+        #share_to_improve_business_power = 0.1
+        #share_to_improve_nature_power = 0.1
+        #share_to_improve_co2_emission_idle = 0.1
+        #share_to_improve_apply_free_allowances = 0.1
+        #share_to_improve_buy_allowances = 0.7
+        #capital_nature     -= share_to_improve_nature_power * company.capital_nature
+        #capital_nature     -= share_to_improve_apply_free_allowances * company.capital_nature
+        #capital_nature     -= share_to_improve_buy_allowances * company.capital_nature
+        budget_to_improve_bp = 0
+        budget_to_improve_intensity = 0
 
-        capital_business    -= share_to_improve_business_power * company.capital_business
-        capital_nature      -= share_to_improve_nature_power * company.capital_nature
-        capital_nature      -= share_to_improve_co2_emission_idle * company.capital_nature
-        capital_nature      -= share_to_improve_apply_free_allowances * company.capital_nature
-        capital_nature      -= share_to_improve_buy_allowances * company.capital_nature
+        if 'business_power' in company.journal[year-2]:
+            delta_bp_last_year = company.journal[year-2]['business_power'] - company.journal[year-1]['business_power']
+            budget_to_improve_bp = delta_bp_last_year * company.capital_business
+        if 'co2_intensity' in company.journal[year-2]:
+            delta_co2_intensity = company.journal[year-2]['co2_intensity'] - company.journal[year-1]['co2_intensity']
+            budget_to_improve_intensity = delta_co2_intensity * company.capital_nature
 
-        budget_to_improve = (share_to_improve_business_power,
-                             share_to_improve_nature_power,
-                             share_to_improve_co2_emission_idle,
-                             share_to_improve_apply_free_allowances,
-                             share_to_improve_buy_allowances)
+        capital_business    -= budget_to_improve_bp
+        capital_nature      -= budget_to_improve_intensity
+
+        budget_to_improve = (budget_to_improve_bp,
+                             0,
+                             budget_to_improve_intensity,
+                             0,
+                             0)
         company.budget_to_improve = budget_to_improve
         company.capital_business = capital_business
         company.capital_nature = capital_nature
@@ -1275,26 +1286,25 @@ class MonteCarloMarket:
             ('general_market', 'Count_company', '', 'count_company','number of surviving companies'),
             ('general_market', 'gdp', 'gdp', 'gdp', 'in Mrd Euro'),
 
-            ('co2_market', 'capital_nature', 'capital_nature', 'capital_nature_sum','mrd Euro'),
-            ('co2_market', 'Free_allowances', 'free_allowances', 'free_allowances_supply','in mio metric ton of Co2 equivalence'),
-            ('co2_market', 'Sold_Allowances', 'sold_allowances', 'sale_allowances_supply','in mio metric ton of Co2 equivalence'),
-            ('co2_market', 'Verified_Emissions', 'verified_co2_emission', 'remaining_stock','in mio metric ton of Co2 equivalence'),
+            #('co2_market', 'capital_nature', 'capital_nature', 'capital_nature_sum','mrd Euro'),
+            #('co2_market', 'Free_allowances', 'free_allowances', 'free_allowances_supply','in mio metric ton of Co2 equivalence'),
+            #('co2_market', 'Sold_Allowances', 'sold_allowances', 'sale_allowances_supply','in mio metric ton of Co2 equivalence'),
+            #('co2_market', 'Verified_Emissions', 'verified_co2_emission', 'remaining_stock','in mio metric ton of Co2 equivalence'),
 
             ('co2_market', 'Co2_Emission_sum', 'co2_emission_sum', 'co2_emission_sum','mio metric tones Co2 Emission'),
             ('co2_market', 'Co2_Intensity', 'co2_intensity', 'co2_intensity','mio metric tones Co2 Emission equivalence per Mrd Euro'),
-            ('co2_market', 'Co2_Consumption', 'co2_consumption', 'co2_consumption','in mio metric tons Co2 equivalence'),
-            ('co2_market', 'Co2_Subvention', 'co2_subvention', 'co2_subvention','in Mrd Euro'),
+            #('co2_market', 'Co2_Consumption', 'co2_consumption', 'co2_consumption','in mio metric tons Co2 equivalence'),
+            #('co2_market', 'Co2_Subvention', 'co2_subvention', 'co2_subvention','in Mrd Euro'),
 
         ]
-        #self.transform_data_and_plot(
-        #    ('general_market', 'Co2_Emission_sum', 'co2_emission_sum', 'co2_emission_sum','mio metric tones Co2 Emission')
-        #)
         self.csv_service = csv_service
+        #self.transform_data_and_plot(
+        #    ('co2_market', 'Co2_Emission_sum', 'co2_emission_sum', 'co2_emission_sum','mio metric tones Co2 Emission')
+        #)
         plot_time_start = datetime.now()
         with ProcessPoolExecutor() as executor:
             keys = plot_labels
             executor.map(self.transform_data_and_plot, keys)
-            #csv_service.save_mc_result_sim4(transformed_data, plot_labels, self.start_year, self.target_year)
 
         plot_time_end = datetime.now()
         delta_time = plot_time_end-plot_time_start

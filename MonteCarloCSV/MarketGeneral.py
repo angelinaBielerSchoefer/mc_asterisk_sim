@@ -75,11 +75,11 @@ class MarketGeneral:
         ### normal distributed
 
         mu = self.gdp * self.start_business_value_share / num_companies
-        sigma = self.__assume['stdev_start_value']/num_companies
+        sigma = self.__assume['stdev_start_value'] / num_companies
         business_value = random.gauss(mu, sigma)
 
         mu = self.start_delta_gdp * self.start_business_value_share / num_companies
-        sigma = stdev(self.__delta_gdp_pi) *self.start_business_value_share /num_companies
+        sigma = stdev(self.__delta_gdp_pi) * self.start_business_value_share / num_companies
         delta_business_value = random.gauss(mu, sigma)
 
         mu = self.capital_business * self.start_capital_share / num_companies
@@ -91,13 +91,11 @@ class MarketGeneral:
 
         weight_nature = random.gauss(mu, sigma)
         capital_nature = weight_nature*capital
-
-        #history_years = range (entrance_year, )
         journal = {}
 
         business_value_r = business_value
         capital_r = capital
-        year = entrance_year -1
+        year = entrance_year - 1
         while year > (entrance_year - 10):
 
             if not year in journal:
@@ -135,6 +133,8 @@ class MarketGeneral:
         is_alive = self.check_company_if_survived(company)
 
         return business_power, is_alive, market_influence
+
+
     def __sim_reverse_journal(self, business_value, capital, num_companies):
         mu = self.start_delta_gdp * self.start_business_value_share / num_companies
         sigma = stdev(self.__delta_gdp_pi) * self.start_business_value_share /num_companies
@@ -157,7 +157,9 @@ class MarketGeneral:
                 year -= 1
             else:
                 year = 0
-        if death_counter > 10:
+
+        limit = random.gauss(7.5, 2.5)
+        if death_counter > limit:
             company.is_alive = False
 
         return company.is_alive
@@ -212,14 +214,11 @@ class MarketGeneral:
                                                                                          self.rest_of_the_world.market_influence)
         return
 
-    def company_option_improve_business_power(self, budget, company):
-
-        #### ASSUMPTION!!!
-        #set bp
-        company.business_power += 0.1
-        #increase co2_influence
-        company.co2_intensity += 0.1
-
+    def company_option_improve_business_power(self, budget, business_power_last_year, business_value_last_year):
+        limit = budget/business_value_last_year
+        delta_business_power = random.uniform(0, limit)
+        business_power = business_power_last_year + delta_business_power
+        return business_power
     def __get_sales_volume_category(self,capital):
         #capital in Mrd Euro
 

@@ -66,20 +66,26 @@ class CsvService:
         file_path = os.path.join(dir, '{0}_{1}_{2}.csv'.format(file_pre,current_date,name_file))
         data_out = { 'year' : [],
                      'unit' : []}
-        for scenario, entry in data_in.items():
-            year = start_year
-            while year <= target_year:
-                data_out['year'].append(year)
-                if year in entry:
-                    for col_name,value in entry[year].items():
-                        #col_name can be mean, min, max
-                        column = "{0}_{1}_{2}".format(scenario,col_name, name_sce)
-                        if not column in data_out:
-                            data_out[column] = []
-                        data_out[column].append(value)
-                    data_out['unit'].append(unit)
-                year +=1
 
+        print("target year: {0}".format(target_year))
+        year = start_year
+        while year <= target_year:
+            data_out['year'].append(year)
+            data_out['unit'].append(unit)
+            for scenario, entry in data_in.items():
+                keys=['mean']
+                if scenario != 'data':
+                    keys.append('min')
+                    keys.append('max')
+                for key in keys:
+                    column = "{0}_{1}_{2}".format(scenario,key, name_sce)
+                    if not column in data_out:
+                        data_out[column] = []
+                    value = ""
+                    if year in entry:
+                        value = entry[year][key]
+                    data_out[column].append(value)
+            year +=1
         self.__write_into_file(data_out, delimiter, file_path)
         return
 
@@ -94,7 +100,6 @@ class CsvService:
 
                 # Zeile als Dictionary erstellen
                 row = {}
-
                 for key, value in data.items():
                     row[key] = value[i]
 

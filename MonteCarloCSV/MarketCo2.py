@@ -299,18 +299,20 @@ class MarketCo2:
         if price < low_limit: # lower than 80cent per tCo2
             price = low_limit
         return price
-    def company_option_improve_nature_power(self, budget, company):
-        ##SET nature power, co2_intensity
-        company.nature_power   += 0.1
-        company.co2_intensity  -= 0.1
-        company.business_power -= 0.1
-        return
-    def company_option_improve_co2_emission_idle(self,budget, company):
-        ## SET co2_idle
-        ##Assumption###
-        company.co2_emission_idle -= company.co2_emission_idle * 0.1
-        company.business_power -= company.business_power * 0.1
-        return
+    def company_option_improve_nature_power(self, budget, nature_power_last_year):
+        ##SET nature power
+        limit = budget/nature_power_last_year
+        delta_nature_power = random.uniform(0, limit)
+        nature_power = nature_power_last_year + delta_nature_power
+        return nature_power
+
+    def company_option_improve_co2_intensity(self,budget, co2_intensity_last_year):
+        ## SET co2_intensity
+        limit = budget/co2_intensity_last_year
+        delta_co2_intensity = random.uniform(0, limit)
+        co2_intensity = co2_intensity_last_year + delta_co2_intensity
+        return co2_intensity
+
     def company_option_apply_free_allowances(self, budget, company):
         company.is_applying = False
         if company.co2_apply_free > 0 and budget > 0:

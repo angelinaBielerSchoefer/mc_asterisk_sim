@@ -32,12 +32,12 @@ class Company:
         self.market_influence_nature  = 0.0
 
         #ASSUMPTION!!!!!
-        random_taxable = random.randrange(0,1)
-        if random_taxable > 0.2:
-            self.is_co2_taxable = True
-        else:
-            self.is_co2_taxable = False
-
+        #random_taxable = random.randrange(0,1)
+        #if random_taxable > 0.2:
+        #    self.is_co2_taxable = True
+        #else:
+            #self.is_co2_taxable = False
+        self.is_co2_taxable = True
         self.business_power = 0.0
         self.market_influence = 0.0
 
