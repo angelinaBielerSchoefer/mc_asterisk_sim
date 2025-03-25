@@ -1,4 +1,7 @@
 import random
+
+#from scipy.special import delta
+
 from Company import Company
 from statistics import stdev, mean
 
@@ -216,9 +219,15 @@ class MarketGeneral:
 
     def company_option_improve_business_power(self, budget, business_power_last_year, business_value_last_year):
         limit = budget/business_value_last_year
-        delta_business_power = random.uniform(0, limit)
+        delta_business_power = 0
+        if self.business_power < limit:
+            delta_business_power = random.uniform(self.business_power, limit)
+        else:
+            delta_business_power = random.uniform(limit, self.business_power)
+
         business_power = business_power_last_year + delta_business_power
         return business_power
+
     def __get_sales_volume_category(self,capital):
         #capital in Mrd Euro
 

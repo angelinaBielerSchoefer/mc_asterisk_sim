@@ -9,6 +9,7 @@ from MonteCarloMarket import MonteCarloMarket
 from MonteCarloService import MonteCarloService
 from CsvService import CsvService
 from MonteCarloSimWorkLoad import MonteCarloSimWorkLoad
+from game import Game
 
 
 def parse_arguments():
@@ -288,6 +289,13 @@ def main():
                     'stdev_start_co2_intensity': float(6.23314),#standard deviation taken from Co2-intensity deviation by sector: https://www.destatis.de/DE/Themen/Gesellschaft-Umwelt/Umwelt/UGR/_Grafik/_Interaktiv/co2-emissionsintensitaet.html
                     'stdev_start_value': float(666), ##666 stdev of data gdp over the years
                 }
+            case 5:
+                numComp = args.NumComp
+                run_mode = args.Run
+                start_year = 2008
+                target_year = 2010
+                trials = args.Trials
+                assume = {}
             case _:
                 print("Unknown SimId")
                 exit()
@@ -331,6 +339,16 @@ def main():
                                                    parallel=parallel,
                                                    start_year = start_year
                                                    )
+            case 5:
+                parallel = False
+                if run_mode =="parallel":
+                    parallel = True
+                simulation_game = Game(int(trials),
+                                       int(numComp),
+                                       assume=assume,
+                                       parallel = parallel,
+                                       start_year = start_year,
+                                       target_year = target_year)
 
 
         #### Print: good to know
@@ -344,6 +362,10 @@ def main():
                 print("Start Year: {0}".format(start_year))
                 print("Target Year: {0}".format(target_year))
                 print("Planetary Boundary: {0}".format(pb_name))
+                print("Assumptions: {0}".format(assume))
+            case 5:
+                print("Start Year: {0}".format(start_year))
+                print("Target Year: {0}".format(target_year))
                 print("Assumptions: {0}".format(assume))
 
 
@@ -379,6 +401,8 @@ def main():
                 data_co2_subvention_value = get_co2_subvention_value(csv_service)
                 data_price_allowances_year_value = get_price_allowances_year_value(csv_service)
                 data_price_credit_year_value = get_price_credits_year_value(csv_service)
+            case 5:
+                data = ()
 
         #### SIMULATION execution
 
@@ -408,6 +432,17 @@ def main():
                                                                          data_total_assets_year_value,
                                                                          pb_name,
                                                                          )
+            case 5:
+                print( "Simulation execution of state of Scenario 1 and 2")
+                print("implementation ongoing")
+                sc1_result, sc2_result = simulation_game.start_simulation(data)
+
+                print("ist sc1 result:", sc1_result)
+
+                data = [123,159,258]
+                sc1_result = ([102,150,200], [125, 169, 240], [170,210,300])
+                print("soll sc1 result:", sc1_result)
+                sc2_result = ([98,148,180], [98,148,180], [98,148,180])
         #### intern_sim0_printResults():
         print()
         print("================================================================")
@@ -494,6 +529,8 @@ def main():
             case 4:
                 print("ongoing ....")
                 monte_carlo_mkt.plot_results(mc_result, csv_service)
+            case 5:
+                simulation_game.plot_results(data, sc1_result, sc2_result, csv_service)
         print()
         print("================================================================")
         print("Simulation {0} Terminated".format(simId))
