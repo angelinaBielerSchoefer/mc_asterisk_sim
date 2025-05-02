@@ -34,17 +34,18 @@ class Game:
         self.current_year = int(datetime.now().strftime('%Y'))
         self.current_month = int(datetime.now().strftime('%m'))
 
-    def start_simulation(self, data):
-        self.data = data
-        self.sc1  = {}
+    def start_simulation(self, raw_data):
+        self.sc1  = ()
         self.sc2  = {}
+
+        self.data_eval = self.__prerun_data(raw_data)
         print("----- Execution of Scenario 1 -----")
         if self.parallel:
             print("Implementation ongoing")
             self.sc1 = self.__run_simulation_one_parallel()
         else:
             for i in range(self.num_trials):
-                self.sc1[i] = self.simulate_one_trial_of_scenario_one(i)
+                self.sc1 += (self.simulate_one_trial_of_scenario_one(i), )
         print("----- Execution of Scenario 2 -----")
         if self.parallel:
             print("not yet implemented")
@@ -58,7 +59,7 @@ class Game:
         with ProcessPoolExecutor() as executor:
             keys = list(range(self.num_trials))
             result = executor.map(self.simulate_one_trial_of_scenario_one, keys)
-            mc_result = dict(zip(keys, result))
+            mc_result = tuple(result)
 
         return mc_result
     def __run_simulation_two_parallel(self):
@@ -70,28 +71,105 @@ class Game:
         return mc_result
 
     def simulate_one_trial_of_scenario_one(self, trial_cnt):
-        business_power_pi = [1.2, -0.7, 0.34]
-        market_condition_pi = [0.7, -0.9, 2.3]
-        market = Playground(self.assume,business_power_pi,market_condition_pi)
+        business_power_pi = self.data_eval[0]
+        market_condition_pi = self.data_eval[1]
+        start_gdp = self.data_eval[2]
+        start_business_value_share = 0
+        market = Playground(self.assume,
+                            business_power_pi,
+                            start_business_value_share,
+                            start_gdp,
+                            market_condition_pi)
         list_actors = []
         for i in range(self.num_actors):
             business_capital, business_value, delta_business_value = market.sim_start_of_company(self.num_actors)
             company =  Actor(business_capital, business_value)
             list_actors.append(company)
         year = self.start_year
+        total_progress = self.target_year - self.start_year
+        capital_years = []
         gdp_years = []
-        while year >= self.target_year:
+        while year <= self.target_year:
             gdp = 0
             capital_sum = 0
             for company in list_actors:
-                business_capital = company.calc_business_capital()
-                business_value = company.calc_business_value()
+
+                business_capital, business_value = self.__run_year_for_company(company,year)
 
                 capital_sum += business_capital
                 gdp += business_value
-            gdp_years.append(gdp_years)
+            gdp_years.append(gdp)
+            capital_years.append(capital_sum)
+
+            progress = year - self.start_year
+            if progress % 10 == 0:
+                print("Trial: {0} Progress: {1} %".format(trial_cnt, round(100*progress/total_progress,2)))
             year += 1
-        return gdp_years
+
+        return gdp_years, capital_years
+
+    def __run_year_for_company(self,company, year):
+        business_capital = company.calc_business_capital()
+        business_value = company.calc_business_value()
+
+        return business_capital, business_value
+
+    def __prerun_data(self, data):
+        data_capital = data[0]
+        data_gdp = data[1]
+
+        data_delta_capital = self.__calc_delta(data_capital)
+        data_delta_gdp = self.__calc_delta(data_gdp)
+
+
+        business_power = self.__calc_business_power(data_gdp,data_delta_capital)
+        business_power_pi = self.__create_sim_base(business_power)
+
+        market_condition = self.__calc_market_conditions(data_delta_gdp,data_capital)
+        market_condition_pi = self.__create_sim_base(market_condition)
+
+        plot_gdp =self.__prepare_raw_data_for_plot(data_gdp)
+        plot_capital = self.__prepare_raw_data_for_plot(data_capital)
+
+        return business_power_pi, market_condition_pi, data_gdp[self.start_year], plot_gdp, plot_capital
+
+    def __create_sim_base(self, data_to_sim):
+        pi = []
+        for key in data_to_sim:
+            if len(data_to_sim[key])>0:
+                pi.append(data_to_sim[key][-1])
+        return pi
+
+    def __calc_business_power(self, data_gdp, data_delta_capital):
+        bus_pow = {}
+
+        for year in data_delta_capital:
+            if not year in bus_pow:
+                bus_pow[year] = []
+            if year-1 in data_gdp:
+                if not year-1 in bus_pow:
+                    bus_pow[year-1] = []
+                if data_gdp[year-1] == 0:
+                    bus_pow[year-1].append(0)
+                else:
+                    bus_pow[year-1].append(data_delta_capital[year]/data_gdp[year-1])
+        return bus_pow
+    def __calc_market_conditions(self,data_delta_gdp,data_total_assets):
+        m_cond = {}
+        for year in data_delta_gdp:
+            if year in data_total_assets:
+                if not year in m_cond:
+                    m_cond[year] = []
+                m_cond[year].append(data_delta_gdp[year] / data_total_assets[year])
+        return m_cond
+
+    def __calc_delta(self, dataset):
+        delta_data = {}
+        for year in dataset:
+            if (year-1) in dataset:
+                delta_data[year] = dataset[year] - dataset[year-1]
+        return delta_data
+
     def simulate_one_trial_of_scenario_two(self, trial_cnt):
         return
 
@@ -111,15 +189,23 @@ class Game:
         # [2] = data
         # [3] = results of sc1
         # [4] = results of sc2
+        sc1_gdp = sc1_result[0]
+        sc2_gdp = sc2_result
+        data_gdp = list(self.data_eval[3].values())
+        data_capital = list(self.data_eval[4].values())
+        while len(sc2_gdp) < len(sc1_gdp[0]):
+            sc2_gdp += ([10,12,13],)
 
+        sc1_capital = sc1_result[1]
         plot_labels = [
-            ('gdp', 'mil euro', data, sc1_result, sc2_result)
-
+            ('gdp', 'mil euro', data_gdp, sc1_gdp, sc2_gdp),
+            ('capital', 'mil euro', data_capital, sc1_capital, sc2_gdp)
         ]
+
         self.csv_service = csv_service
-        #self.transform_data_and_plot(
-        #    ('co2_market', 'Co2_Emission_sum', 'co2_emission_sum', 'co2_emission_sum','mio metric tones Co2 Emission')
-        #)
+        self.transform_data_and_plot(
+            ('capital', 'mil euro', data_capital, sc1_capital, sc2_gdp)
+        )
         plot_time_start = datetime.now()
         with ProcessPoolExecutor() as executor:
             keys = plot_labels
@@ -173,13 +259,14 @@ class Game:
             sc1_min.append(min(result_list_in_year))
             sc1_mean.append(mean(result_list_in_year))
             sc1_max.append(max(result_list_in_year))
-
             for trial_i in scen2:
-                result_list_in_year.append(trial_i[position])
+                if position in trial_i:
+                    result_list_in_year.append(trial_i[position])
+                else:
+                    result_list_in_year.append(0)
             sc2_min.append(min(result_list_in_year))
             sc2_mean.append(mean(result_list_in_year))
             sc2_max.append(max(result_list_in_year))
-
         self.__plot_mc_results(data,
                                sc1_min,
                                sc1_mean,
@@ -217,9 +304,9 @@ class Game:
 
             plt.plot(x, data, color_code['data'], linestyle='-',label="data")
             plt.plot(x, sc1_mean, color_code['sc1'], linestyle='-',label="scenario 1")
-            plt.plot(x, sc2_mean, color_code['sc2'], linestyle='-',label="scenario 2")
+            #plt.plot(x, sc2_mean, color_code['sc2'], linestyle='-',label="scenario 2")
             plt.fill_between(x, sc1_min, sc1_max, color=color_code['sc1'], alpha=0.2, label='95% confidence interval sc1')
-            plt.fill_between(x, sc2_min, sc2_max, color=color_code['sc2'], alpha=0.2, label='95% confidence interval sc2')
+            #plt.fill_between(x, sc2_min, sc2_max, color=color_code['sc2'], alpha=0.2, label='95% confidence interval sc2')
 
             plt.legend()
 
@@ -228,6 +315,13 @@ class Game:
             self.add_timestamp(plt)#,confi_interval)
             plt.savefig(tp_run_chart_path)
         return
+    def __prepare_raw_data_for_plot(self, raw_data):
+        plot_data= {year: value for year, value in raw_data.items() if self.start_year <= year <= self.target_year}
+        for year in range(self.start_year, self.target_year+1):
+            if not year in plot_data:
+                plot_data[year] = ''
+        print(plot_data)
+        return plot_data
     def add_timestamp(self, plt, confidence_interval = (0.0, 0.0)):
         plt.text(1, 1.02, f"Generated on {self.current_date}", transform=plt.gca().transAxes, fontsize=10, ha='right', va='top')
 

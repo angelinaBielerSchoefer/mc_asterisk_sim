@@ -42,7 +42,7 @@ def parse_arguments():
     parser.add_argument("--RemainingMinutes", default="360")
     parser.add_argument("--RemainingStoryPoints", default="10")
 
-    parser.add_argument("--Trials", default="10")
+    parser.add_argument("--Trials", default="100")
     parser.add_argument("--NumComp", default="1900")
     parser.add_argument("--Run", default="parallel")
 
@@ -293,7 +293,7 @@ def main():
                 numComp = args.NumComp
                 run_mode = args.Run
                 start_year = 2008
-                target_year = 2010
+                target_year = 2030
                 trials = args.Trials
                 assume = {}
             case _:
@@ -394,7 +394,7 @@ def main():
                 data_company_grow_rate_year_value = get_grow_rate_year_value(csv_service)
                 data_emissions_year_value = get_ger_co2_emissions_year_value(csv_service)
                 data_investment_by_category_year_value = get_investment_compcat_year_value(csv_service)
-                data_co2_price_year_value = get_co2_price_euets_year_value(csv_service)
+                #data_co2_price_year_value = get_co2_price_euets_year_value(csv_service)
                 data_co2_emission_global_year_value = get_global_co2_emissions_year_value(csv_service)
                 data_co2_free_allowances_value = get_co2_free_allowances_value(csv_service)
                 data_co2_sold_allowances_value = get_co2_sold_allowances_value(csv_service)
@@ -402,7 +402,10 @@ def main():
                 data_price_allowances_year_value = get_price_allowances_year_value(csv_service)
                 data_price_credit_year_value = get_price_credits_year_value(csv_service)
             case 5:
-                data = ()
+                data_gdp_year_value = get_ger_gdp_year_value(csv_service)
+                data_capital_year_value = get_ger_total_assets_year_value(csv_service)
+                data = (data_capital_year_value,
+                        data_gdp_year_value)
 
         #### SIMULATION execution
 
@@ -437,11 +440,12 @@ def main():
                 print("implementation ongoing")
                 sc1_result, sc2_result = simulation_game.start_simulation(data)
 
-                print("ist sc1 result:", sc1_result)
-
                 data = [123,159,258]
-                sc1_result = ([102,150,200], [125, 169, 240], [170,210,300])
-                print("soll sc1 result:", sc1_result)
+
+                #print("ist sc1 result:", sc1_result)
+                #sc1_result = ([102,150,200], [125, 169, 240], [170,210,300])
+                #print("soll sc1 result:", sc1_result)
+
                 sc2_result = ([98,148,180], [98,148,180], [98,148,180])
         #### intern_sim0_printResults():
         print()

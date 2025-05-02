@@ -9,7 +9,7 @@ from statistics import stdev, mean
 class Playground:
     def __init__(self, assume,
                  business_power_pi,
-         #        start_business_value_share,
+                 start_business_value_share,
          #        start_business_capital,
          #        start_total_capital,
          #        start_capital_share,
@@ -18,7 +18,7 @@ class Playground:
          #        start_co2_emission_global,
          #        start_delta_gdp,
          #        co2_investment_share_pi,
-         #        start_gdp,
+                 start_gdp,
                  market_condition_pi):
         self.__assume = assume
         self.__business_power_pi = business_power_pi
@@ -29,12 +29,12 @@ class Playground:
         #self.__set_business_power_global()
         #self.__set_market_condition_global()
 
-        #self.start_business_value_share = start_business_value_share
+        self.start_business_value_share = start_business_value_share
         #self.start_capital_share = start_capital_share
 
         #self.co2_emission_global = start_co2_emission_global
         #self.count_company = 0
-        #self.gdp = start_gdp
+        self.gdp = start_gdp
         #self.start_delta_gdp = start_delta_gdp
         #self.rest_of_the_world = None
         #self.capital_total = start_total_capital
@@ -44,7 +44,7 @@ class Playground:
         #### Start values provided by data
         ### normal distributed
 
-        mu = random.uniform(0,1000)#self.gdp * self.start_business_value_share / num_actors
+        mu = self.gdp * self.start_business_value_share / num_actors #random.uniform(0,1000)#
         sigma = random.random() #self.__assume['stdev_start_value'] / num_actors
         business_value = random.gauss(mu, sigma)
 
