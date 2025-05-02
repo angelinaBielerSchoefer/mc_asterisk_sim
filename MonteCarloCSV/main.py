@@ -43,7 +43,7 @@ def parse_arguments():
     parser.add_argument("--RemainingStoryPoints", default="10")
 
     parser.add_argument("--Trials", default="100")
-    parser.add_argument("--NumComp", default="1900")
+    parser.add_argument("--NumComp", default="2000")
     parser.add_argument("--Run", default="parallel")
 
     return parser.parse_args()
@@ -254,11 +254,17 @@ def main():
                 numComp = args.NumComp
                 run_mode = args.Run
                 start_year = 2008
-                target_year = 2030
+                target_year = 2050
                 trials = args.Trials
                 pb_name = "atmosphere"
                 assume = {
                     'prices_lower_limit': float(0.8),
+                    #https://wiki.bildungsserver.de/klimawandel/index.php/Kohlendioxid-Konzentration
+                    #  1 ppm CO2 = 7,814 Gt CO2
+                    # co2_em given in mio metric tones CO2
+                    # atmospheric state given in ppm CO2
+                    #r_convert = 7814
+                    'r_convert': 7814, #
                     'prop_sales_volume': {
                         'u2'    : 0.9153, #source destasi.de 2023
                         '2-10'  : 0.062,
@@ -361,7 +367,8 @@ def main():
             case 4:
                 print("Start Year: {0}".format(start_year))
                 print("Target Year: {0}".format(target_year))
-                print("Planetary Boundary: {0}".format(pb_name))
+                print("Count Company: {0}".format(numComp))
+                print("Count Trials: {0}".format(trials))
                 print("Assumptions: {0}".format(assume))
             case 5:
                 print("Start Year: {0}".format(start_year))

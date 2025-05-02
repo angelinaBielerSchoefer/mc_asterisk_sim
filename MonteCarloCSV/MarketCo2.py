@@ -8,6 +8,7 @@ from mesonbuild.scripts.env2mfile import detect_missing_native_binaries
 
 class MarketCo2:
     def __init__(self, assume,
+                 state_of_atmosphere_start,
                  capital_nature_start,
                  carbon_credit_supply_start,
                  co2_consumption_start,
@@ -16,6 +17,7 @@ class MarketCo2:
                  co2_subvention_start,
                  delta_capital_nature_pi,
                  delta_carbon_credits_supply_pi,
+                 delta_co2_consumption_pi,
                  delta_co2_subvention_pi,
                  delta_free_allowance_supply_pi,
                  delta_sale_allowance_supply_pi,
@@ -25,49 +27,50 @@ class MarketCo2:
                  sale_allowances_supply_start
                  ):
         self.__assume = assume
-        self.__delta_co2_subvention_pi      = delta_co2_subvention_pi
-        self.__delta_capital_nature_pi      = delta_capital_nature_pi
-        self.__delta_free_allowances_pi     = delta_free_allowance_supply_pi
-        self.__delta_sale_allowances_pi     = delta_sale_allowance_supply_pi
-        self.__delta_carbon_credits_pi      = delta_carbon_credits_supply_pi
+        #self.__delta_co2_subvention_pi      = delta_co2_subvention_pi
+        #self.__delta_capital_nature_pi      = delta_capital_nature_pi
+        #self.__delta_free_allowances_pi     = delta_free_allowance_supply_pi
+        #self.__delta_sale_allowances_pi     = delta_sale_allowance_supply_pi
+        #self.__delta_carbon_credits_pi      = delta_carbon_credits_supply_pi
 
-        self.free_allowances_supply    = free_allowances_supply_start
-        self.sale_allowances_supply    = sale_allowances_supply_start
-        self.carbon_credit_supply      = carbon_credit_supply_start
-        self.apply_free_sum            = 0
-        self.demand_sale_sum           = 0
-        self.remaining_stock_sum       = 0
+        #self.free_allowances_supply    = free_allowances_supply_start
+        #self.sale_allowances_supply    = sale_allowances_supply_start
+        #self.carbon_credit_supply      = carbon_credit_supply_start
+        #self.apply_free_sum            = 0
+        #self.demand_sale_sum           = 0
+        #self.remaining_stock_sum       = 0
 
-        self.__cross_sectoral_correction_factor = free_allowances_supply_start / co2_emission_sum_start
-        self.price_allowances          = price_allowances_start
-        self.price_credit              = price_credit_start
+        #self.__cross_sectoral_correction_factor = free_allowances_supply_start / co2_emission_sum_start
+        #self.price_allowances          = price_allowances_start
+        #self.price_credit              = price_credit_start
 
-        self.granted_free_sum              = 0
-        self.sold_allowances_sum           = 0
-        self.carbon_credit_sum             = 0
+        #self.granted_free_sum              = 0
+        #self.sold_allowances_sum           = 0
+        #self.carbon_credit_sum             = 0
 
         self.co2_consumption            = co2_consumption_start
+        self.__delta_co2_consumption_pi   = delta_co2_consumption_pi
         self.co2_emission_sum           = co2_emission_sum_start
         self.co2_intensity              = co2_intensity_start
-        self.co2_subvention             = co2_subvention_start
+        #self.co2_subvention             = co2_subvention_start
         self.capital_nature_sum         = capital_nature_start
         self.delta_capital_nature_sum   = 0
 
-        self.delta_carbon_credits_supply = self.__sim_delta_carbon_credits_supply()
+        #self.delta_carbon_credits_supply = self.__sim_delta_carbon_credits_supply()
 
-        self.delta_co2_subvention = self.__sim_delta_co2_subvention()
-        self.delta_free_allowances = self.__sim_delta_free_allowances_supply()
-        self.delta_sale_allowances = self.__sim_delta_sale_allowances_supply()
+        #self.delta_co2_subvention = self.__sim_delta_co2_subvention()
+        #self.delta_free_allowances = self.__sim_delta_free_allowances_supply()
+        #self.delta_sale_allowances = self.__sim_delta_sale_allowances_supply()
 
-        self.state_of_atmosphere = 0
+        self.state_of_atmosphere = state_of_atmosphere_start
 
-        self.invoice = {
+        #self.invoice = {
             #           (Demander, Supplier, Sales price, tCo2)
-            'free' : [(None,None,0.0,0.0)],
-            'sale' : [(None,None,0.0,0.0)],
-            'vcm'  : [(None,None,0.0,0.0)],
-            'tax'  : [(None,None,0.0,0.0)]
-        }
+       #     'free' : [(None,None,0.0,0.0)],
+       #     'sale' : [(None,None,0.0,0.0)],
+       #     'vcm'  : [(None,None,0.0,0.0)],
+       #     'tax'  : [(None,None,0.0,0.0)]
+       # }
 
         self.journal={
             -1: {
@@ -76,41 +79,42 @@ class MarketCo2:
                 'co2_consumption'     :        float(self.co2_consumption),
                 'co2_emission_sum':            float(self.co2_emission_sum),
                 'co2_intensity':               float(self.co2_intensity),
-                'co2_subvention':              float(self.co2_subvention),
-                'free_allowances_supply':      float(self.free_allowances_supply),
-                'granted_free_sum':            float(self.granted_free_sum),
-                'invoice':                           self.invoice,
-                'sale_allowances_supply':      float(self.sale_allowances_supply),
-                'sold_allowances_sum':         float(self.sold_allowances_sum),
-                'remaining_stock_sum':         float(self.remaining_stock_sum),
+                #'co2_subvention':              float(self.co2_subvention),
+                #'free_allowances_supply':      float(self.free_allowances_supply),
+                #'granted_free_sum':            float(self.granted_free_sum),
+                #'invoice':                           self.invoice,
+                #'sale_allowances_supply':      float(self.sale_allowances_supply),
+                #'sold_allowances_sum':         float(self.sold_allowances_sum),
+                #'remaining_stock_sum':         float(self.remaining_stock_sum),
             }
         }
 
         self.co2_balance = 0
         return
 
-    def sim_new_year_co2(self):
+    def sim_new_year_co2(self, co2_emission_global_ly):
+        co2_consumption = self.co2_consumption + self.__sim_delta_co2_consumption()
+        self.state_of_atmosphere = self.__calc_new_state_of_atmosphere(self.state_of_atmosphere,co2_consumption, co2_emission_global_ly)
+        self.co2_consumption = co2_consumption
+        #self.delta_free_allowances = self.__sim_delta_free_allowances_supply()
+        #self.free_allowances_supply = self.free_allowances_supply + self.delta_free_allowances
+        #if self.free_allowances_supply < 0:
+        #    self.free_allowances_supply = 0
 
+        #self.delta_sale_allowances = self.__sim_delta_sale_allowances_supply()
+        #self.sale_allowances_supply = self.sale_allowances_supply + self.delta_sale_allowances
+        #if self.sale_allowances_supply < 0:
+        #    self.sale_allowances_supply = 0
 
-        self.delta_free_allowances = self.__sim_delta_free_allowances_supply()
-        self.free_allowances_supply = self.free_allowances_supply + self.delta_free_allowances
-        if self.free_allowances_supply < 0:
-            self.free_allowances_supply = 0
+        #self.delta_carbon_credits_supply = self.__sim_delta_carbon_credits_supply()
+        #self.carbon_credit_supply      = self.carbon_credit_supply + self.delta_carbon_credits_supply
+        #if self.carbon_credit_supply < 0:
+        #    self.carbon_credit_supply = 0
 
-        self.delta_sale_allowances = self.__sim_delta_sale_allowances_supply()
-        self.sale_allowances_supply = self.sale_allowances_supply + self.delta_sale_allowances
-        if self.sale_allowances_supply < 0:
-            self.sale_allowances_supply = 0
-
-        self.delta_carbon_credits_supply = self.__sim_delta_carbon_credits_supply()
-        self.carbon_credit_supply      = self.carbon_credit_supply + self.delta_carbon_credits_supply
-        if self.carbon_credit_supply < 0:
-            self.carbon_credit_supply = 0
-
-        self.delta_co2_subvention = self.__sim_delta_co2_subvention()
-        self.co2_subvention +=self.delta_co2_subvention
-        if self.co2_subvention < 0:
-            self.co2_subvention = 0
+        #self.delta_co2_subvention = self.__sim_delta_co2_subvention()
+        #self.co2_subvention +=self.delta_co2_subvention
+        #if self.co2_subvention < 0:
+        #    self.co2_subvention = 0
 
 
         #self.delta_capital_nature =  self.__sim_delta_capital_nature()
@@ -118,36 +122,42 @@ class MarketCo2:
 
         return #(self.capital_nature)
 
-    def sim_co2_subvention(self, co2_subvention_last_year):
-        co2_subvention = co2_subvention_last_year
-        return co2_subvention
+    #def sim_co2_subvention(self, co2_subvention_last_year):
+    #    co2_subvention = co2_subvention_last_year
+    #    return co2_subvention
 
 
-    def __sim_delta_co2_subvention(self):
-        delta_co2_subvention = random.choice(self.__delta_co2_subvention_pi)
-        self.__delta_co2_subvention_pi.append(delta_co2_subvention)
-        return delta_co2_subvention
+    #def __sim_delta_co2_subvention(self):
+    #    delta_co2_subvention = random.choice(self.__delta_co2_subvention_pi)
+    #    self.__delta_co2_subvention_pi.append(delta_co2_subvention)
+    #    return delta_co2_subvention
 
+    def __sim_delta_co2_consumption(self):
+        sigma = stdev(self.__delta_co2_consumption_pi)
+        mu = mean(self.__delta_co2_consumption_pi)
+        delta_co2_consumption = random.gauss(mu, sigma)#random.uniform(mu, mu-sigma)
+        self.__delta_co2_consumption_pi.append(delta_co2_consumption)
+        return delta_co2_consumption
 
-    def __sim_delta_free_allowances_supply(self):
-        sigma = stdev(self.__delta_free_allowances_pi)
-        mu = mean(self.__delta_free_allowances_pi)
-        delta_free_allowances = random.gauss(mu, sigma)#random.uniform(mu, mu-sigma)
-        self.__delta_free_allowances_pi.append(delta_free_allowances)
-        return delta_free_allowances
+    #def __sim_delta_free_allowances_supply(self):
+    #    sigma = stdev(self.__delta_free_allowances_pi)
+    #    mu = mean(self.__delta_free_allowances_pi)
+    #    delta_free_allowances = random.gauss(mu, sigma)#random.uniform(mu, mu-sigma)
+    #    self.__delta_free_allowances_pi.append(delta_free_allowances)
+    #    return delta_free_allowances
 
-    def __sim_delta_sale_allowances_supply(self):
-        sigma = stdev(self.__delta_sale_allowances_pi)
-        mu = mean(self.__delta_sale_allowances_pi)
-        delta_sale_allowances = random.gauss(mu, sigma)
-        self.__delta_sale_allowances_pi.append(delta_sale_allowances)
-        return delta_sale_allowances
-    def __sim_delta_carbon_credits_supply(self):
-        sigma = stdev(self.__delta_carbon_credits_pi)
-        mu = mean(self.__delta_carbon_credits_pi)
-        delta_carbon_credits = random.gauss(mu, sigma)
-        self.__delta_carbon_credits_pi.append(delta_carbon_credits)
-        return delta_carbon_credits
+    #def __sim_delta_sale_allowances_supply(self):
+    #    sigma = stdev(self.__delta_sale_allowances_pi)
+    #    mu = mean(self.__delta_sale_allowances_pi)
+    #    delta_sale_allowances = random.gauss(mu, sigma)
+    #    self.__delta_sale_allowances_pi.append(delta_sale_allowances)
+    #    return delta_sale_allowances
+    #def __sim_delta_carbon_credits_supply(self):
+    #    sigma = stdev(self.__delta_carbon_credits_pi)
+    #    mu = mean(self.__delta_carbon_credits_pi)
+    #    delta_carbon_credits = random.gauss(mu, sigma)
+    #    self.__delta_carbon_credits_pi.append(delta_carbon_credits)
+    #    return delta_carbon_credits
 
     def __sim_start_co2_intensity(self):
         co2_intensity = 0
@@ -192,23 +202,23 @@ class MarketCo2:
         rest_of_the_world.co2_emission -= company.co2_emission
 
         return
-    def calc_company_start_situation(self, delta_business_value, emission_avg, stdev_emission):
+    #def calc_company_start_situation(self, delta_business_value, emission_avg, stdev_emission):
 
-        sigma = stdev_emission
-        mu = emission_avg
-        co2_emission = 0
-        while co2_emission <= 0:
-            co2_emission = random.gauss(mu, sigma)
+    #    sigma = stdev_emission
+    #    mu = emission_avg
+    #    co2_emission = 0
+    #    while co2_emission <= 0:
+    #        co2_emission = random.gauss(mu, sigma)
 
-        ###TODO: Fexibilisieren
-        co2_intensity = self.co2_intensity
+        ### Fexibilisieren
+    #    co2_intensity = self.co2_intensity
 
-        delta_co2_emission = co2_intensity * delta_business_value
+    #    delta_co2_emission = co2_intensity * delta_business_value
 
-        share_of_subvention = random.uniform(0,0.2)
-        co2_subvention = self.co2_subvention * share_of_subvention
+    #    share_of_subvention = random.uniform(0,0.2)
+        #co2_subvention = self.co2_subvention * share_of_subvention
 
-        return co2_emission, co2_intensity, co2_subvention
+    #    return co2_emission, co2_intensity, co2_subvention
 
     def calc_company_nature_saldo(self, company):
         costs =[]
@@ -268,17 +278,17 @@ class MarketCo2:
 
         #capital_nature, co2_apply_free, co2_consumption, co2_emission, co2_supply
 
-    def calc_cross_sectoral_correction_factor(self):
-        co2_free_apply = self.apply_free_sum
-        if co2_free_apply <= 0:
-            self.__cross_sectoral_correction_factor = 1
-        else:
-            self.__cross_sectoral_correction_factor = self.free_allowances_supply / co2_free_apply
+    #def calc_cross_sectoral_correction_factor(self):
+    #    co2_free_apply = self.apply_free_sum
+    #    if co2_free_apply <= 0:
+    #        self.__cross_sectoral_correction_factor = 1
+    #    else:
+    #        self.__cross_sectoral_correction_factor = self.free_allowances_supply / co2_free_apply#
 
-        if self.__cross_sectoral_correction_factor > 1 :
-            self.__cross_sectoral_correction_factor = 1
+    #    if self.__cross_sectoral_correction_factor > 1 :
+    #        self.__cross_sectoral_correction_factor = 1
 
-        return self.__cross_sectoral_correction_factor
+    #    return self.__cross_sectoral_correction_factor
 
     def calc_supplier_price_by_demander_amount(self, demander_amount):
         low_limit = self.__assume['prices_lower_limit']
@@ -467,14 +477,14 @@ class MarketCo2:
     def get_impact_price(self):
         return self.__calc_impact_price(self.price_allowances, self.state_of_atmosphere)
 
+    def __calc_new_state_of_atmosphere(self,state_of_atmosphere, co2_consumption_ly, total_emission_ly):
+        r_convert = self.__assume['r_convert']
+        add_on = (total_emission_ly - co2_consumption_ly)* r_convert
+        new_state = state_of_atmosphere + add_on
+        return new_state
     def __calc_impact_price(self, co2_price, state_of_atmosphere, co2_em = 1, optimum=280, threshold=350):
-
-        #https://wiki.bildungsserver.de/klimawandel/index.php/Kohlendioxid-Konzentration
-        #  1 ppm CO2 = 7,814 Gt CO2
-        # co2_em and co2_consumption given in Gt CO2
-        r_factor = 7.814
-
-        v_co2 = co2_em / r_factor ## change of atmospheric state by human impact in ppm
+        r_convert = self.__assume['r_convert']
+        v_co2 = co2_em / r_convert ## change of atmospheric state by human impact in ppm
         #c_co2 = co2_consum / r_factor
 
         ## Source master project paper
@@ -500,13 +510,13 @@ class MarketCo2:
         self.journal[logId]['co2_consumption']          = float(self.co2_consumption)
         self.journal[logId]['co2_emission_sum']         = float(self.co2_emission_sum)
         self.journal[logId]['co2_intensity']            = float(self.co2_intensity)
-        self.journal[logId]['co2_subvention']           = float(self.co2_subvention)
-        self.journal[logId]['free_allowances_supply']   = float(self.free_allowances_supply)
-        self.journal[logId]['granted_free_sum']         = float(self.granted_free_sum)
-        self.journal[logId]['invoice'] =                        self.invoice
-        self.journal[logId]['sale_allowances_supply']   = float(self.sale_allowances_supply)
-        self.journal[logId]['sold_allowances_sum']      = float(self.sold_allowances_sum)
-        self.journal[logId]['remaining_stock_sum']      = float(self.remaining_stock_sum)
+        #self.journal[logId]['co2_subvention']           = float(self.co2_subvention)
+        #self.journal[logId]['free_allowances_supply']   = float(self.free_allowances_supply)
+        #self.journal[logId]['granted_free_sum']         = float(self.granted_free_sum)
+        #self.journal[logId]['invoice'] =                        self.invoice
+        #self.journal[logId]['sale_allowances_supply']   = float(self.sale_allowances_supply)
+        #self.journal[logId]['sold_allowances_sum']      = float(self.sold_allowances_sum)
+        #self.journal[logId]['remaining_stock_sum']      = float(self.remaining_stock_sum)
 
         self.invoice ={
             #           (Demander, Supplier, Sales price, tCo2)
@@ -523,11 +533,11 @@ class MarketCo2:
             'co2_consumption'     :        float(self.co2_consumption),
             'co2_emission_sum':            float(self.co2_emission_sum),
             'co2_intensity':               float(self.co2_intensity),
-            'co2_subvention':              float(self.co2_subvention),
-            'free_allowances_supply':      float(self.free_allowances_supply),
-            'granted_free_sum':            float(self.granted_free_sum),
-            'invoice':                           self.invoice,
-            'sale_allowances_supply':      float(self.sale_allowances_supply),
-            'sold_allowances_sum':         float(self.sold_allowances_sum),
-            'remaining_stock_sum':         float(self.remaining_stock_sum),
+            #'co2_subvention':              float(self.co2_subvention),
+            #'free_allowances_supply':      float(self.free_allowances_supply),
+            #'granted_free_sum':            float(self.granted_free_sum),
+            #'invoice':                           self.invoice,
+            #'sale_allowances_supply':      float(self.sale_allowances_supply),
+            #'sold_allowances_sum':         float(self.sold_allowances_sum),
+            #'remaining_stock_sum':         float(self.remaining_stock_sum),
         }

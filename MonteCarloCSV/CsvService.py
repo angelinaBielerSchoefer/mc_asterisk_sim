@@ -192,7 +192,7 @@ class CsvService:
                 if not row.startswith("#"):
                     data = row.split(delimiter)
                     year = int(data[0])
-                    value = [float(data[7])] #read values in mio metric ton
+                    value = [float(data[7])*0.1]
                     if not year in dataset and not year == 2019: #2019 wurde die statistische Erfassung von Daten geändert, daher ist die Zuwachsrate nicht berechenbar
                         dataset[year] = value
 
