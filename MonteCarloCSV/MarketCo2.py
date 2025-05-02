@@ -93,8 +93,17 @@ class MarketCo2:
         return
 
     def sim_new_year_co2(self, co2_emission_global_ly):
-        co2_consumption = self.co2_consumption + self.__sim_delta_co2_consumption()
-        self.state_of_atmosphere = self.__calc_new_state_of_atmosphere(self.state_of_atmosphere,co2_consumption, co2_emission_global_ly)
+
+        #print("old co2-consumption: ", self.co2_consumption)
+        #print("delta co2-consumption: ", delta)
+        #print("new co2-consumption: ", co2_consumption)
+        self.state_of_atmosphere = self.__calc_new_state_of_atmosphere(self.state_of_atmosphere,self.co2_consumption, co2_emission_global_ly)
+        delta = self.__sim_delta_co2_consumption()
+        co2_consumption = self.co2_consumption + delta
+
+        if co2_consumption < 0:
+            co2_consumption = 0
+            print ("detected 0 consumption this year")
         self.co2_consumption = co2_consumption
         #self.delta_free_allowances = self.__sim_delta_free_allowances_supply()
         #self.free_allowances_supply = self.free_allowances_supply + self.delta_free_allowances
@@ -133,10 +142,11 @@ class MarketCo2:
     #    return delta_co2_subvention
 
     def __sim_delta_co2_consumption(self):
-        sigma = stdev(self.__delta_co2_consumption_pi)
+        sigma = stdev(self.__delta_co2_consumption_pi)#*0.02
         mu = mean(self.__delta_co2_consumption_pi)
         delta_co2_consumption = random.gauss(mu, sigma)#random.uniform(mu, mu-sigma)
         self.__delta_co2_consumption_pi.append(delta_co2_consumption)
+        #print("delta_co2_consumption simulated", delta_co2_consumption)
         return delta_co2_consumption
 
     #def __sim_delta_free_allowances_supply(self):
@@ -478,10 +488,13 @@ class MarketCo2:
         return self.__calc_impact_price(self.price_allowances, self.state_of_atmosphere)
 
     def __calc_new_state_of_atmosphere(self,state_of_atmosphere, co2_consumption_ly, total_emission_ly):
+
         r_convert = self.__assume['r_convert']
-        add_on = (total_emission_ly - co2_consumption_ly)* r_convert
+
+        add_on = (total_emission_ly - co2_consumption_ly)/ r_convert
         new_state = state_of_atmosphere + add_on
         return new_state
+
     def __calc_impact_price(self, co2_price, state_of_atmosphere, co2_em = 1, optimum=280, threshold=350):
         r_convert = self.__assume['r_convert']
         v_co2 = co2_em / r_convert ## change of atmospheric state by human impact in ppm

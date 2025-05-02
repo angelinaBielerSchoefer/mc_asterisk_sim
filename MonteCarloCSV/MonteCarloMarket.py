@@ -448,14 +448,15 @@ class MonteCarloMarket:
             if (cnt_y in data_collection['co2_emission_global']
                     and cnt_y+1 in data_collection['state_of_atmosphere']):
                 r_convert = self.assume['r_convert']
-                v_co2 = data_collection['co2_emission_global'][cnt_y] / r_convert ## change of atmospheric state by human impact in ppm
+                v_ppm = data_collection['co2_emission_global'][cnt_y] / r_convert ## change of atmospheric state by human impact in ppm
                 atmosphere_last_year = data_collection['state_of_atmosphere'][cnt_y-1]
 
-                data_collection['eco_performance'][cnt_y] =self.__calc_eco_impact_by_parabola(atmosphere_last_year,v_co2)
-                calc_new_atmosphere_value = atmosphere_last_year + v_co2 #in ppm
+                data_collection['eco_performance'][cnt_y] =self.__calc_eco_impact_by_parabola(atmosphere_last_year,v_ppm)
+                calc_new_atmosphere_value = atmosphere_last_year + v_ppm #in ppm
                 data_new_atmosphere_value = data_collection['state_of_atmosphere'][cnt_y] # in ppm
                 co2_consumption = calc_new_atmosphere_value - data_new_atmosphere_value  #calc diff in ppm
-
+                if co2_consumption < 0:
+                    co2_consumption = 0
                 data_collection['co2_consumption'][cnt_y] = co2_consumption * r_convert # calc to mio metric tons
 
             if cnt_y in data_collection['co2_consumption'] and (cnt_y-1) in data_collection['co2_consumption']:
@@ -516,7 +517,7 @@ class MonteCarloMarket:
         data_collection['business_value_share_pi']      = self.create_sim_base(data_collection['share_of_gdp'])
         data_collection['capital_share_pi']             = self.create_sim_base(data_collection['share_of_total_assets'])
         data_collection['delta_co2_consumption_pi']           = self.create_sim_base(data_collection['delta_co2_consumption'])
-
+        print("co2 consumption pi",data_collection['delta_co2_consumption_pi'])
         data_collection['co2_investment_share_pi']      = self.create_sim_base(data_collection['share_of_co2_investment'])
         #data_collection['co2_price_pi']                 = self.create_sim_base(data_collection['co2_price'])
         data_collection['delta_capital_nature_pi']      = self.create_sim_base(data_collection['delta_capital_nature'])
@@ -1303,13 +1304,12 @@ class MonteCarloMarket:
 
             ('co2_market', 'Co2_Emission_sum', 'co2_emission_sum', 'co2_emission_sum','mio metric tones CO2 Emission'),
             ('co2_market', 'Co2_Intensity', 'co2_intensity', 'co2_intensity','mio metric tones CO2 Emission equivalence per Mrd Euro'),
-            ('co2_market', 'State_of_Atmosphere', 'state_of_atmosphere', 'state_of_atmosphere','ppm CO2')
-            #('co2_market', 'Co2_Consumption', 'co2_consumption', 'co2_consumption','in mio metric tons Co2 equivalence'),
-
+            ('co2_market', 'State_of_Atmosphere', 'state_of_atmosphere', 'state_of_atmosphere','ppm CO2'),
+            ('co2_market', 'Co2_consumption', 'co2_consumption', 'co2_consumption','mio metric tones CO2 natural consumption'),
         ]
         self.csv_service = csv_service
         #self.transform_data_and_plot(
-        #    ('co2_market', 'State_of_Atmosphere', 'state_of_atmosphere', 'state_of_atmosphere','ppm CO2')
+            #('co2_market', 'Co2_consumption', 'co2_consumption', 'co2_consumption','mio metric tones CO2 natural consumption')
         #)
         plot_time_start = datetime.now()
         with ProcessPoolExecutor() as executor:
