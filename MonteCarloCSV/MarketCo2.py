@@ -18,13 +18,14 @@ class MarketCo2:
                  delta_capital_nature_pi,
                  delta_carbon_credits_supply_pi,
                  delta_co2_consumption_pi,
+                 delta_co2_intensity_pi,
+                 delta_co2_price_pi,
                  delta_co2_subvention_pi,
                  delta_free_allowance_supply_pi,
                  delta_sale_allowance_supply_pi,
                  free_allowances_supply_start,
                  price_allowances_start,
-                 price_credit_start,
-                 sale_allowances_supply_start
+                 price_credit_start
                  ):
         self.__assume = assume
         #self.__delta_co2_subvention_pi      = delta_co2_subvention_pi
@@ -43,15 +44,17 @@ class MarketCo2:
         #self.__cross_sectoral_correction_factor = free_allowances_supply_start / co2_emission_sum_start
         #self.price_allowances          = price_allowances_start
         #self.price_credit              = price_credit_start
-
+        self.price_co2 = price_credit_start
+        self.delta_co2_price_pi = delta_co2_price_pi
+        self.price_ppm = self.__calc_impact_price(self.price_co2, state_of_atmosphere_start)
         #self.granted_free_sum              = 0
         #self.sold_allowances_sum           = 0
         #self.carbon_credit_sum             = 0
-
         self.co2_consumption            = co2_consumption_start
         self.__delta_co2_consumption_pi   = delta_co2_consumption_pi
         self.co2_emission_sum           = co2_emission_sum_start
         self.co2_intensity              = co2_intensity_start
+        self.__delta_co2_intensity_pi    = delta_co2_intensity_pi
         #self.co2_subvention             = co2_subvention_start
         self.capital_nature_sum         = capital_nature_start
         self.delta_capital_nature_sum   = 0
@@ -71,7 +74,6 @@ class MarketCo2:
        #     'vcm'  : [(None,None,0.0,0.0)],
        #     'tax'  : [(None,None,0.0,0.0)]
        # }
-
         self.journal={
             -1: {
                 'state_of_atmosphere' :        float(self.state_of_atmosphere),
@@ -93,18 +95,31 @@ class MarketCo2:
         return
 
     def sim_new_year_co2(self, co2_emission_global_ly):
-
-        #print("old co2-consumption: ", self.co2_consumption)
-        #print("delta co2-consumption: ", delta)
-        #print("new co2-consumption: ", co2_consumption)
         self.state_of_atmosphere = self.__calc_new_state_of_atmosphere(self.state_of_atmosphere,self.co2_consumption, co2_emission_global_ly)
-        delta = self.__sim_delta_co2_consumption()
-        co2_consumption = self.co2_consumption + delta
-
+        delta_co2_consumption = self.__sim_delta_co2_consumption()
+        co2_consumption = self.co2_consumption + delta_co2_consumption
         if co2_consumption < 0:
             co2_consumption = 0
-            print ("detected 0 consumption this year")
+            #print ("detected 0 consumption this year")
         self.co2_consumption = co2_consumption
+        self.co2_price = self.__sim_co2_price()
+
+        return
+
+    def __sim_co2_price(self):
+        mu = mean(self.delta_co2_price_pi)
+        sigma = stdev(self.delta_co2_price_pi)
+        delta_co2_price = random.gauss(mu, sigma)
+        self.delta_co2_price_pi.append(delta_co2_price)
+
+        co2_price = self.price_co2 + delta_co2_price
+        return co2_price
+
+
+        #(self.capital_nature)
+
+
+
         #self.delta_free_allowances = self.__sim_delta_free_allowances_supply()
         #self.free_allowances_supply = self.free_allowances_supply + self.delta_free_allowances
         #if self.free_allowances_supply < 0:
@@ -129,7 +144,6 @@ class MarketCo2:
         #self.delta_capital_nature =  self.__sim_delta_capital_nature()
         #self.capital_nature_sum +=  self.delta_capital_nature
 
-        return #(self.capital_nature)
 
     #def sim_co2_subvention(self, co2_subvention_last_year):
     #    co2_subvention = co2_subvention_last_year
@@ -178,26 +192,23 @@ class MarketCo2:
         return co2_intensity
 
     def sim_start_of_company(self, company_list, rest_of_the_world, co2_emission_total_start, co2_emission_sum_start):
-
         rest_of_the_world.co2_emission = co2_emission_total_start - co2_emission_sum_start
-        rest_of_the_world.co2_intensity = self.co2_intensity
-
-
+        rest_of_the_world.co2_intensity = rest_of_the_world.co2_emission/rest_of_the_world.business_value
         calc_emission_sum = 0
         random_values = np.random.rand(len(company_list))  # Erzeugt X zufällige Werte zwischen 0 und 1
         random_proportions = random_values / random_values.sum()  # Normalisieren auf Summe 1
         for index in company_list:
             company = company_list[index]
-            company.co2_emission = self.co2_emission_sum * random_proportions[index]
-
-            company.co2_intensity = self.__sim_start_co2_intensity()
+            company.co2_emission = co2_emission_sum_start * random_proportions[index]
+            company.co2_intensity = company.co2_emission/company.business_value
+            #self.__sim_start_co2_intensity()
 
             calc_emission_sum += company.co2_emission
-        rest_emissions = self.co2_emission_sum - calc_emission_sum
+        rest_emissions = co2_emission_sum_start - calc_emission_sum
         if rest_emissions != 0:
             id = random.randint(0, (len(company_list)-1))
             company = company_list[id]
-            company.co2_emission+= rest_emissions
+            #company.co2_emission+= rest_emissions
         return
     def sim_entrance_new_company(self, company,
                                        cnt_company,
@@ -242,16 +253,76 @@ class MarketCo2:
 
         saldo = sum(incomes) - sum(costs)
         return saldo
-    def calc_company_nature_situation(self, delta_business_value,
+
+    def sim_company_delta_co2_intensity(self, budget_to_improve_co2_intensity):
+        #print("budget_to_improve_co2_intensity", budget_to_improve_co2_intensity)
+        delta_co2_intensity = None
+        if budget_to_improve_co2_intensity > 0:
+            #-0.1 #TODO wieviel je nach budget
+            #TODO abhängig von eigener historie nach 3 jahren
+            sigma = stdev(self.__delta_co2_intensity_pi)#*0.02
+            mu = mean(self.__delta_co2_intensity_pi)
+            delta_co2_intensity = random.gauss(mu, sigma)
+
+            #if co2_intensity < (delta_co2_intensity * -1):
+            #    co2_intensity = co2_intensity + delta_co2_intensity
+        return delta_co2_intensity
+    def sim_company_co2_intensity(self, co2_intensity_ly):
+        #print("co2-intensity: ",self.co2_intensity)
+        mu = mean(self.__delta_co2_intensity_pi)
+        #print("__delta_co2_intensity_mu: ",mu)
+        sigma = stdev(self.__delta_co2_intensity_pi)
+        influence_co2_intensity = random.gauss(mu, sigma)
+        #if influence_co2_intensity > 0:
+        #    influence_co2_intensity = delta_co2_intensity * -1
+        #print("delta_co2_intensity: ",delta_co2_intensity)
+        co2_intensity = co2_intensity_ly + influence_co2_intensity
+        #delta_co2_intensity = 0
+        return co2_intensity
+
+    def calc_company_technical_improvement(self,budget_to_improve_co2_intensity,
+                                           delta_business_value,
+                                           business_value,
                                      co2_emission_last_year,
                                      co2_intensity,
                                      ):
-        delta_co2_emission = co2_intensity * delta_business_value
-        co2_emission = co2_emission_last_year + delta_co2_emission
 
+        delta_co2_emission = (co2_intensity * delta_business_value)
+        co2_emission = co2_emission_last_year + delta_co2_emission
 
         return co2_emission
 
+        #print("co2_intensity", co2_intensity)
+        #print("delta_business_value", delta_business_value)
+        #print("delta_co2_emission", delta_co2_emission)
+
+
+
+        #co2_emission = co2_intensity * business_value
+        #print("co2_emission", co2_emission)
+        #if co2_intensity < 0 or co2_emission < 0 or business_value < 0:
+        #    return co2_emission_last_year
+
+    def calc_company_marketing_improvement(self, budget_to_pay_off_emissions, co2_emission, is_co2_taxable):
+        delta_marketing_influence = 0
+        co2_cost = self.price_co2 * co2_emission
+        overshoot = 0
+        if not is_co2_taxable:
+            #budget to pay off / price
+            if co2_cost > budget_to_pay_off_emissions:
+                delta_marketing_influence = +1 #TODO simulieren
+                pass
+            else:
+                delta_marketing_influence = +3 #TODO simulieren
+                pass
+        else:
+            overshoot =  budget_to_pay_off_emissions - co2_cost
+
+        return delta_marketing_influence, overshoot
+
+    #def calc_company_co2_emission(self, business_value, co2_intensity):
+    #    co2_emission = co2_intensity * business_value
+    #    return co2_emission
 
 
 
@@ -497,7 +568,7 @@ class MarketCo2:
 
     def __calc_impact_price(self, co2_price, state_of_atmosphere, co2_em = 1, optimum=280, threshold=350):
         r_convert = self.__assume['r_convert']
-        v_co2 = co2_em / r_convert ## change of atmospheric state by human impact in ppm
+        v_ppm = co2_em / r_convert ## change of atmospheric state by human impact in ppm
         #c_co2 = co2_consum / r_factor
 
         ## Source master project paper
@@ -510,10 +581,10 @@ class MarketCo2:
         self.c = -self.a*x3**2 - self.a*x3*term
         #print ("{0}*x² + {1}*x + {2}".format(a,b,c))
         f_of_state = self.a * state_of_atmosphere**2 + self.b * state_of_atmosphere + self.c
-        f_of_change = self.a * (state_of_atmosphere+v_co2)**2 + self.b * (state_of_atmosphere + v_co2) + self.c
+        f_of_change = self.a * (state_of_atmosphere+v_ppm)**2 + self.b * (state_of_atmosphere + v_ppm) + self.c
         impact = f_of_change-f_of_state
-        impact_per_gtco2 = impact / co2_em
-        impact_price = co2_price /  impact_per_gtco2
+        impact_per_tco2 = impact / co2_em
+        impact_price = co2_price /  impact_per_tco2
         return impact_price
 
     def log_to_journal(self, logId):

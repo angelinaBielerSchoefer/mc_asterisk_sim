@@ -42,7 +42,7 @@ def parse_arguments():
     parser.add_argument("--RemainingMinutes", default="360")
     parser.add_argument("--RemainingStoryPoints", default="10")
 
-    parser.add_argument("--Trials", default="100")
+    parser.add_argument("--Trials", default="10")
     parser.add_argument("--NumComp", default="2000")
     parser.add_argument("--Run", default="parallel")
 
@@ -404,6 +404,7 @@ def main():
                 #data_co2_price_year_value = get_co2_price_euets_year_value(csv_service)
                 data_co2_emission_global_year_value = get_global_co2_emissions_year_value(csv_service)
                 data_co2_free_allowances_value = get_co2_free_allowances_value(csv_service)
+                data_co2_price_year_value = get_co2_price_year_value(csv_service)
                 data_co2_sold_allowances_value = get_co2_sold_allowances_value(csv_service)
                 data_co2_subvention_value = get_co2_subvention_value(csv_service)
                 data_price_allowances_year_value = get_price_allowances_year_value(csv_service)
@@ -431,6 +432,7 @@ def main():
                                                                          data_carbon_credits_year_value,
                                                                          data_co2_emission_global_year_value,
                                                                          data_co2_free_allowances_value,
+                                                                         data_co2_price_year_value,
                                                                          data_co2_sold_allowances_value,
                                                                          data_co2_subvention_value,
                                                                          data_company_grow_rate_year_value,

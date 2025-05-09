@@ -347,7 +347,7 @@ class CsvService:
         return dataset
     def read_co2_prices(self, delimiter = ";"):
         dataset = {}
-        file_path = "sim3_co2p.csv"
+        file_path = "sim4_co2p.csv"
         print("Loading Items from CSV File: '{0}'.".format(file_path))
         with open(file_path, "r") as file:
             # Iteriere durch jede Zeile der Datei
@@ -358,10 +358,9 @@ class CsvService:
                 if not row.startswith("#"):
                     data = row.split(delimiter)
                     year = int(data[1])
-                    value = float(data[2]) #U.S. dollars per metric ton of CO₂
+                    value = float(data[2]) #euro per metric ton of CO₂
                     if not year in dataset:
                         dataset[year] = value
-
         return dataset
     def read_price_allowances(self,  delimiter = ";"):
         dataset = {}
