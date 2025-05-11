@@ -42,7 +42,7 @@ def parse_arguments():
     parser.add_argument("--RemainingMinutes", default="360")
     parser.add_argument("--RemainingStoryPoints", default="10")
 
-    parser.add_argument("--Trials", default="10")
+    parser.add_argument("--Trials", default="100")
     parser.add_argument("--NumComp", default="2000")
     parser.add_argument("--Run", default="parallel")
 
@@ -265,27 +265,6 @@ def main():
                     # atmospheric state given in ppm CO2
                     #r_convert = 7814
                     'r_convert': 7814, #
-                    'prop_sales_volume': {
-                        'u2'    : 0.9153, #source destasi.de 2023
-                        '2-10'  : 0.062,
-                        '10-50' : 0.017,
-                        'o50'   : 0.0057
-                    },
-                    'prop_employee_class':{
-                        'u10'       : 0.8697, # source destasi.de 2023
-                        '10-50'     : 0.1039,
-                        '50-250'    : 0.0214,
-                        'o250'      : 0.0049
-                    },
-                    'prop_sales_volume_by_employee_class':{
-                        'u10'       : 0.064, # source destasi.de 2023
-                        '10-50'     : 0.096,
-                        '50-250'    : 0.105,
-                        'o250'      : 0.735
-                    },
-                    'reduce_free_allowances':float(0.025),
-                    'share_of_co2':float(0.8),
-                    'share_of_idle':float(0.5),
                     'stdev_business_power': float(0.188),#0.188 stdev of business power over the year
                     'stdev_delta_co2_intensity': float(0.012),#Randomly chosen
                     'stdev_market_influence': float(0.018),#0.018 stdev of marketconditions over the years

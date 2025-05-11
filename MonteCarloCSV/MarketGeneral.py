@@ -1,6 +1,6 @@
 import random
 
-from Cython.Shadow import returns
+#from Cython.Shadow import returns
 
 #from scipy.special import delta
 
@@ -49,6 +49,7 @@ class MarketGeneral:
         self.capital_total = start_capital_total
         self.capital_business = start_capital_business
         self.business_value_sum = self.gdp * self.start_business_value_share
+
 
         self.journal={
             -1: {
@@ -158,17 +159,17 @@ class MarketGeneral:
         return business_power, capital, market_influence
 
 
-    def sim_investment_share(self):
-        mu = mean(self.__co2_investment_share_pi)
-        sigma = stdev(self.__co2_investment_share_pi)
-        investment_share = random.gauss(mu, sigma)
-        return investment_share
-    def sim_market_influence(self, budget_limit_to_pay_off_emissions, market_influence):
-        #to do: abhängig vom budget
-        mu = market_influence
-        sigma = self.__assume['stdev_market_influence']
-        delta_market_influence = random.gauss(mu,sigma)
-        return delta_market_influence
+    #def sim_investment_share(self):
+    #    mu = mean(self.__co2_investment_share_pi)
+    #    sigma = stdev(self.__co2_investment_share_pi)
+    #    investment_share = random.gauss(mu, sigma)
+    #    return investment_share
+    #def sim_market_influence(self, budget_limit_to_pay_off_emissions, market_influence):
+    #    #to do: abhängig vom budget
+    #    mu = market_influence
+    #    sigma = self.__assume['stdev_market_influence']
+    #    delta_market_influence = random.gauss(mu,sigma)
+    #    return delta_market_influence
 
     def sim_share_mark_invest(self):
         #TO DO abhängigkeit zu company performance
@@ -218,17 +219,6 @@ class MarketGeneral:
 
         return company.is_alive
 
-    def calc_capital_business(self, company_list):
-
-        capital_business = 0
-        for index in company_list:
-            company = company_list[index]
-
-            if company.is_alive:
-                capital_business += company.capital
-        self.capital_business = capital_business + self.rest_of_the_world.capital
-        return self.capital_business
-
     def calc_co2_emission_row(self):
         co2_intensity = self.rest_of_the_world.co2_intensity
         delta_business_value = self.rest_of_the_world.delta_business_value
@@ -276,35 +266,6 @@ class MarketGeneral:
                                                                                          self.rest_of_the_world.market_influence)
         return
 
-    def company_option_improve_business_power(self, budget, business_power_last_year, business_value_last_year):
-        limit = budget/business_value_last_year
-        delta_business_power = 0
-        if self.business_power < limit:
-            delta_business_power = random.uniform(self.business_power, limit)
-        else:
-            delta_business_power = random.uniform(limit, self.business_power)
-
-        business_power = business_power_last_year + delta_business_power
-        return business_power
-
-    def __get_sales_volume_category(self,capital):
-        #capital in Mrd Euro
-
-        capi = capital * 1000 #recalc in mio
-
-        if ( capi > 2):
-            cat = 'u2'
-        else:
-            if capi > 10:
-                cat = '2-10'
-            else:
-                if capi > 50:
-                    cat = '10-50'
-                else:
-                    cat = 'o50'
-
-
-        return cat
     def log_to_journal(self, logId):
         self.journal[logId] = {}
         self.journal[logId]['business_power'] = float(self.business_power)
